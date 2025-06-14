@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xpressapp/Views/login_view.dart';
 import 'package:xpressapp/Views/register_view.dart';
 import 'package:xpressapp/Views/principal_view.dart';
+import 'package:xpressapp/Views/principal_viewTutor.dart';
+import 'package:xpressapp/Views/principal_viewTerapeuta.dart';
 
 class PrincipalInicio extends StatefulWidget {
   const PrincipalInicio({key});
@@ -23,11 +25,23 @@ class _PrincipalInicioState extends State<PrincipalInicio> {
     final isAuthenticated = prefs.getBool('isAuthenticated') ?? false;
 
     if (isAuthenticated) {
+      final role = prefs.getString('userRole');
+      Widget view;
+      switch (role) {
+        case 'Tutor':
+          view = const PrincipalViewTutor();
+          break;
+        case 'Terapeuta':
+          view = const PrincipalViewTerapeuta();
+          break;
+        case 'Paciente':
+        default:
+          view = const PrincipalViewPaciente();
+      }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-              builder: (context) => const PrincipalViewPaciente()),
+          MaterialPageRoute(builder: (context) => view),
         );
       });
     }

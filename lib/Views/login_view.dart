@@ -24,12 +24,6 @@ class LoginView extends StatelessWidget {
       ),
       backgroundColor: const Color(0xFFF2DCD8),
       body: Obx(() {
-        // Verifica si el usuario ya está autenticado y redirige si es necesario
-        if (controller.isAuthenticated.value) {
-          Future.delayed(Duration.zero, () {
-            controller.navigateByRole();
-          });
-        }
         return Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -118,15 +112,7 @@ class LoginView extends StatelessWidget {
                   bool success = await controller.loginUser(email, password);
 
                   if (success) {
-                    // Redirigir según el rol del usuario usando el método del controlador
                     await controller.navigateByRole();
-                  } else {
-                    // Mostrar un mensaje de error
-                    Get.snackbar(
-                      'Error',
-                      'Email o contraseña incorrectos',
-                      snackPosition: SnackPosition.BOTTOM,
-                    );
                   }
                 },
                 style: ElevatedButton.styleFrom(
