@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:xpressapp/Components/mosaico_component.dart';
 import 'package:xpressapp/Components/selected_image_list_component.dart';
-import 'package:xpressapp/Constants/Colors.dart';
+import 'package:xpressapp/Constants/colors.dart';
 import 'package:xpressapp/Controllers/controller.dart';
 import 'package:xpressapp/Models/image_model.dart';
 
