@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:xpressapp/Views/alert_images_component.dart';
 import 'package:xpressapp/Components/card_text_or_image_component.dart';
-import 'package:xpressapp/Constants/Colors.dart';
+import 'package:xpressapp/Constants/colors.dart';
 import 'package:xpressapp/Constants/strings.dart';
 import 'package:xpressapp/Controllers/controller.dart';
 
