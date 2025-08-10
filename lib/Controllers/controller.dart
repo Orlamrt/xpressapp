@@ -182,34 +182,41 @@ class ControllerTeach extends GetxController {
     }
   }
 
-  // Método para enviar solicitud al servidor
-  Future<String> enviarSolicitud(String sentence) async {
-    String apiUrl = 'http://69.62.69.122:8080/conjugar';
-    Map<String, String> headers = {'Content-Type': 'application/json'};
-    String requestBody = jsonEncode({'sentence': sentence});
+ // Método para enviar la secuencia de pictogramas a la API Flask
+Future<String> enviarSolicitud(String sentence) async {
+  // URL de tu nueva API Flask
+  String apiUrl = 'http://TU_IP:5000/generate_sentence'; 
+  Map<String, String> headers = {'Content-Type': 'application/json'};
 
-    try {
-      isLoading.value = true;
-      var response = await http
-          .post(Uri.parse(apiUrl), headers: headers, body: requestBody)
-          .timeout(const Duration(seconds: 15));
-      isLoading.value = false;
+  // El backend espera 'sequence' con la oración sin procesar
+  String requestBody = jsonEncode({'sequence': sentence});
 
-      if (response.statusCode == 200) {
-        Map<String, dynamic> data = jsonDecode(response.body);
-        mostrarPopup(data['frase']);
-        return 'Ok';
-      } else {
-        mostrarPopup('El internet es inestable, vuelva a intentar más tarde');
-        return 'Error';
-      }
-    } catch (error) {
-      isLoading.value = false;
-      mostrarPopup(
-          'Hubo un error inesperado, por favor vuelva a intentar más tarde');
+  try {
+    isLoading.value = true;
+
+    var response = await http
+        .post(Uri.parse(apiUrl), headers: headers, body: requestBody)
+        .timeout(const Duration(seconds: 15));
+
+    isLoading.value = false;
+
+    if (response.statusCode == 200) {
+      Map<String, dynamic> data = jsonDecode(response.body);
+
+      // Mostrar la oración generada por LLaMA
+      mostrarPopup(data['generated_sentence']);
+      return 'Ok';
+    } else {
+      mostrarPopup('El internet es inestable, vuelva a intentar más tarde');
       return 'Error';
     }
+  } catch (error) {
+    isLoading.value = false;
+    mostrarPopup('Hubo un error inesperado, por favor vuelva a intentar más tarde');
+    return 'Error';
   }
+}
+
 
   // Método para mostrar un popup con la frase generada
   void mostrarPopup(String fraseGenerada) async {

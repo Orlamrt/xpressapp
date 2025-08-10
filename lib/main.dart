@@ -12,6 +12,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    WidgetsFlutterBinding.ensureInitialized();
     Get.put(ControllerTeach());
     ControllerTeach controller = Get.find<ControllerTeach>();
     controller.copiarImagenesAssetsAlLocal();
