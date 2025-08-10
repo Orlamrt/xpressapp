@@ -12,7 +12,6 @@ import 'package:xpressapp/Views/principal_viewTutor.dart';
 import 'package:xpressapp/Views/star_session.dart';
 import 'package:xpressapp/Constants/mock_user.dart';
 import 'package:xpressapp/Constants/chat.dart';
-import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
@@ -21,17 +20,12 @@ class ControllerTeach extends GetxController {
   final flutterTts = FlutterTts();
   var isLoading = false.obs;
   var isAuthenticated = false.obs;
-  var userNameController = ''.obs;
-  var idUserController = ''.obs;
-  var birthDateController =
-      ''.obs; // Añadido para manejar la fecha de nacimiento
   // Lista observable de mensajes
   var messages = <Message>[].obs;
   // Listas para pacientes, tutores y asignaciones
   var patients = <MockUser>[].obs;
   var tutors = <MockUser>[].obs;
   var assignments = <Map<String, String>>[].obs; // Lista de asignaciones
-  var qrImageUrl = ''.obs;
   @override
   void onInit() {
     super.onInit();
@@ -333,6 +327,7 @@ Future<String> enviarSolicitud(String sentence) async {
         final Map<String, dynamic> data = jsonDecode(response.body);
 
         isAuthenticated.value = true;
+        await _saveAuthStatus(true);
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('userName', data['nombre']);
         await prefs.setString('userEmail', email);
@@ -343,7 +338,6 @@ Future<String> enviarSolicitud(String sentence) async {
           await prefs.setString('patient_uuid', data['uuid']);
         }
 
-        await navigateByRole();
         return true;
       } else {
         isAuthenticated.value = false;
