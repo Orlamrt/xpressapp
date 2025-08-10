@@ -25,7 +25,7 @@ Asegúrate de tener Flutter instalado. Luego sigue estos pasos:
 
 ```bash
 git clone https://github.com/Orlamrt/xpressapp
-cd https://github.com/Orlamrt/xpressapp
+cd <lugar donde se guardo el repo>
 flutter pub get
 flutter run
 ```
