@@ -179,7 +179,7 @@ class ControllerTeach extends GetxController {
  // Método para enviar la secuencia de pictogramas a la API Flask
 Future<String> enviarSolicitud(String sentence) async {
   // URL de tu nueva API Flask
-  String apiUrl = 'http://TU_IP:5000/generate_sentence'; 
+  String apiUrl = 'http://72.60.25.229:5000/generate_sentence'; 
   Map<String, String> headers = {'Content-Type': 'application/json'};
 
   // El backend espera 'sequence' con la oración sin procesar
@@ -288,7 +288,7 @@ Future<String> enviarSolicitud(String sentence) async {
     try {
       // Realizar la solicitud POST al endpoint de registro en Flask
       final response = await http.post(
-        Uri.parse('http://69.62.69.122:8080/register'),
+        Uri.parse('http://72.60.25.229:8080/register'),
         body: body,
       );
 
@@ -313,7 +313,7 @@ Future<String> enviarSolicitud(String sentence) async {
   Future<bool> loginUser(String email, String password) async {
     try {
       final response = await http.post(
-        Uri.parse('http://69.62.69.122:8080/login'),
+        Uri.parse('http://72.60.25.229:8080/login'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -487,7 +487,7 @@ Future<String> enviarSolicitud(String sentence) async {
     // Asegúrate de cambiar 'your-server-url' a la URL de tu servidor real
     final response = await http.post(
       Uri.parse(
-          'http://69.62.69.122:8080/get-patient-qr'), // Cambia esta URL por la de tu servidor
+          'http://72.60.25.229:8080/get-patient-qr'), // Cambia esta URL por la de tu servidor
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'uuid': patientUuid}),
     );
