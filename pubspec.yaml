@@ -73,6 +73,7 @@ flutter:
   assets:
     - assets/
     - assets/imagenes/
+    - assets/imagenes/naranja/
     - assets/imagenes/amarillo/
     - assets/imagenes/verde/
     - assets/imagenes/morado/

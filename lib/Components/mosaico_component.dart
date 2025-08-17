@@ -26,8 +26,9 @@ class MosaicoComponent extends StatelessWidget {
 
     await controller.tellPhrase(title);
 
-    List<String> imagenes =
-        await controller.obtenerListaImagenes(Textos.colores[index]);
+    List<String> imagenes = await controller.obtenerListaImagenes(
+      Textos.colores[index],
+    );
 
     if (!context.mounted) return;
     showDialog(
@@ -51,6 +52,7 @@ class MosaicoComponent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Pallete pallete = Pallete();
+
     final height = MediaQuery.of(context).size.height;
     final width = MediaQuery.of(context).size.width;
 
@@ -67,7 +69,9 @@ class MosaicoComponent extends StatelessWidget {
 
     return Obx(
       () => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 0.0), // Reduce el padding vertical
+        padding: const EdgeInsets.symmetric(
+          vertical: 0.0,
+        ), // Reduce el padding vertical
         child: FittedBox(
           fit: BoxFit.contain,
           child: SizedBox(
@@ -89,14 +93,14 @@ class MosaicoComponent extends StatelessWidget {
                   child: Container(
                     decoration: BoxDecoration(
                       border: Border.all(
-                          color: const Color(0xDDD96C94),
-                          width: 1.0), // Borde
-                      borderRadius: BorderRadius.circular(3.0), // Bordes redondeados
+                        color: const Color(0xDDD96C94),
+                        width: 1.0,
+                      ), // Borde
+                      borderRadius: BorderRadius.circular(
+                        3.0,
+                      ), // Bordes redondeados
                     ),
-                    child: CartdTextOrImageComponent(
-                      color: color,
-                      text: text,
-                    ),
+                    child: CartdTextOrImageComponent(color: color, text: text),
                   ),
                 );
               },

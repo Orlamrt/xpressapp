@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
+import 'package:flutter/foundation.dart';
 
 class ImageUploadView extends StatefulWidget {
   @override
@@ -31,8 +32,10 @@ class _ImageUploadViewState extends State<ImageUploadView> {
       await imagesDirectory.create(recursive: true);
     }
 
-    final subfolders =
-        imagesDirectory.listSync().whereType<Directory>().toList();
+    final subfolders = imagesDirectory
+        .listSync()
+        .whereType<Directory>()
+        .toList();
 
     setState(() {
       _subfolders = subfolders;
@@ -58,8 +61,9 @@ class _ImageUploadViewState extends State<ImageUploadView> {
     if (_selectedFolder == null) return;
 
     try {
-      final XFile? newImage =
-          await _picker.pickImage(source: ImageSource.gallery);
+      final XFile? newImage = await _picker.pickImage(
+        source: ImageSource.gallery,
+      );
       if (newImage == null || !mounted) return;
 
       final newPath = path.join(
@@ -75,8 +79,9 @@ class _ImageUploadViewState extends State<ImageUploadView> {
           content: const Text('Imagen agregada exitosamente!'),
           backgroundColor: const Color(0xDDD96C94),
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
         ),
       );
     } catch (e) {
@@ -86,8 +91,9 @@ class _ImageUploadViewState extends State<ImageUploadView> {
           content: Text('Error: ${e.toString()}'),
           backgroundColor: Colors.red.shade700,
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
         ),
       );
     }
@@ -97,8 +103,9 @@ class _ImageUploadViewState extends State<ImageUploadView> {
     if (_selectedImage == null) return;
 
     try {
-      final XFile? newImage =
-          await _picker.pickImage(source: ImageSource.gallery);
+      final XFile? newImage = await _picker.pickImage(
+        source: ImageSource.gallery,
+      );
       if (newImage == null || !mounted) return;
 
       final File oldImage = File(_selectedImage!);
@@ -112,11 +119,9 @@ class _ImageUploadViewState extends State<ImageUploadView> {
 
       setState(() {
         _imageVersion++;
-        _localImages = Directory(_selectedFolder!)
-            .listSync()
-            .whereType<File>()
-            .cast<File>()
-            .toList();
+        _localImages = Directory(
+          _selectedFolder!,
+        ).listSync().whereType<File>().cast<File>().toList();
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -124,8 +129,9 @@ class _ImageUploadViewState extends State<ImageUploadView> {
           content: const Text('Imagen agregada exitosamente!'),
           backgroundColor: const Color(0xDDD96C94),
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
         ),
       );
     } catch (e) {
@@ -135,8 +141,9 @@ class _ImageUploadViewState extends State<ImageUploadView> {
           content: Text('Error: ${e.toString()}'),
           backgroundColor: Colors.red.shade700,
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
         ),
       );
     }
@@ -174,12 +181,16 @@ class _ImageUploadViewState extends State<ImageUploadView> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: DropdownButton<String>(
                   value: _selectedFolder,
-                  hint: const Text('Selecciona una subcarpeta',
-                      style: TextStyle(color: Color(0xDDD96C94))),
+                  hint: const Text(
+                    'Selecciona una subcarpeta',
+                    style: TextStyle(color: Color(0xDDD96C94)),
+                  ),
                   isExpanded: true,
                   dropdownColor: const Color(0xFFF2DCD8),
-                  icon: const Icon(Icons.arrow_drop_down,
-                      color: Color(0xDDD96C94)),
+                  icon: const Icon(
+                    Icons.arrow_drop_down,
+                    color: Color(0xDDD96C94),
+                  ),
                   items: _subfolders.map((folder) {
                     return DropdownMenuItem<String>(
                       value: folder.path,
@@ -187,8 +198,10 @@ class _ImageUploadViewState extends State<ImageUploadView> {
                         children: [
                           const Icon(Icons.folder, color: Color(0xDDD96C94)),
                           const SizedBox(width: 10),
-                          Text(path.basename(folder.path),
-                              style: const TextStyle(color: Color(0xDDD96C94))),
+                          Text(
+                            path.basename(folder.path),
+                            style: const TextStyle(color: Color(0xDDD96C94)),
+                          ),
                         ],
                       ),
                     );
@@ -202,18 +215,21 @@ class _ImageUploadViewState extends State<ImageUploadView> {
             Expanded(
               child: _localImages.isEmpty
                   ? Center(
-                      child: Text('No hay imágenes en esta carpeta',
-                          style: TextStyle(
-                              fontSize: 18,
-                              color: Color(0xDDD96C94).withOpacity(0.6))),
+                      child: Text(
+                        'No hay imágenes en esta carpeta',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Color(0xDDD96C94).withOpacity(0.6),
+                        ),
+                      ),
                     )
                   : GridView.builder(
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 8,
-                        mainAxisSpacing: 8,
-                      ),
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
+                          ),
                       itemCount: _localImages.length,
                       itemBuilder: (context, index) {
                         final file = _localImages[index];
@@ -239,7 +255,8 @@ class _ImageUploadViewState extends State<ImageUploadView> {
                                     file,
                                     fit: BoxFit.cover,
                                     key: ValueKey(
-                                        '${file.path}_${file.lastModifiedSync()}'),
+                                      '${file.path}_${file.lastModifiedSync()}',
+                                    ),
                                     cacheWidth:
                                         (MediaQuery.of(context).size.width ~/ 3)
                                             .toInt(),
@@ -258,9 +275,12 @@ class _ImageUploadViewState extends State<ImageUploadView> {
                                   const Positioned(
                                     right: 8,
                                     top: 8,
-                                    child: Icon(Icons.check_circle,
-                                        color: Color(0xDDD96C94), size: 24),
-                                  )
+                                    child: Icon(
+                                      Icons.check_circle,
+                                      color: Color(0xDDD96C94),
+                                      size: 24,
+                                    ),
+                                  ),
                               ],
                             ),
                           ),
@@ -285,7 +305,8 @@ class _ImageUploadViewState extends State<ImageUploadView> {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15)),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
                       elevation: 8,
                     ),
                   ),
@@ -306,7 +327,8 @@ class _ImageUploadViewState extends State<ImageUploadView> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15)),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
                         elevation: 8,
                       ),
                     ),

@@ -8,10 +8,12 @@ class SelectedImageListComponent extends StatefulWidget {
   const SelectedImageListComponent({super.key});
 
   @override
-  State<SelectedImageListComponent> createState() => _SelectedImageListComponentState();
+  State<SelectedImageListComponent> createState() =>
+      _SelectedImageListComponentState();
 }
 
-class _SelectedImageListComponentState extends State<SelectedImageListComponent> {
+class _SelectedImageListComponentState
+    extends State<SelectedImageListComponent> {
   final scrollController = ScrollController();
   final controller = Get.find<ControllerTeach>();
 
@@ -34,14 +36,19 @@ class _SelectedImageListComponentState extends State<SelectedImageListComponent>
             itemBuilder: (context, index) {
               final imageModel = controller.imagenes[index];
 
-              double maxWidth = screenWidth > 600 ? 200 : 160; // Tamaño máximo ajustable
+              double maxWidth = screenWidth > 600
+                  ? 200
+                  : 160; // Tamaño máximo ajustable
               double aspectRatio = 1.0; // Relación de aspecto
               double maxHeight = maxWidth / aspectRatio;
 
               return Stack(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5.0 , vertical: 5.5 ), // Reducir el padding horizontal
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5.0,
+                      vertical: 5.5,
+                    ), // Reducir el padding horizontal
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
                         maxWidth: maxWidth,

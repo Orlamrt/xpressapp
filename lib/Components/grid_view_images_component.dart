@@ -39,10 +39,7 @@ class _GridViewImagesComponentState extends State<GridViewImagesComponent> {
     if (!context.mounted) return;
 
     controller.imagenes.add(
-      ImageModel(
-        imagePath: imagen.imagePath,
-        color: imagen.color!,
-      ),
+      ImageModel(imagePath: imagen.imagePath, color: imagen.color!),
     );
 
     Navigator.of(context).pop();
@@ -54,29 +51,38 @@ class _GridViewImagesComponentState extends State<GridViewImagesComponent> {
     return selectedCards[index];
   }
 
-  Orientation obtenerRotacion(BuildContext context) {
-    return MediaQuery.of(context).orientation;
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Obtener el ancho y alto del dispositivo
-    double screenWidth = MediaQuery.of(context).size.width;
-    double screenHeight = MediaQuery.of(context).size.height;
-    Orientation orientacion = obtenerRotacion(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isLandscape = screenWidth > screenHeight;
 
-    // Ajustar valores en función del tamaño de la pantalla y la orientación
-    int crossAxisCount = (screenWidth > 600)
-        ? (orientacion == Orientation.portrait ? 3 : 4)
-        : (orientacion == Orientation.portrait ? 2 : 2);
-    double aspectRatio =
-        (screenWidth > 600) ? 0.8 : 0.7; // Proporción de aspecto ajustada
+    // Determinar número de columnas según tamaño de pantalla y orientación
+    int crossAxisCount;
+    if (screenWidth >= 1200) {
+      crossAxisCount = isLandscape ? 5 : 4;
+    } else if (screenWidth >= 800) {
+      crossAxisCount = isLandscape ? 4 : 3;
+    } else if (screenWidth >= 500) {
+      crossAxisCount = isLandscape ? 3 : 2;
+    } else {
+      crossAxisCount = 1;
+    }
+
+    // Ajustar proporción de aspecto según orientación y tamaño de pantalla
+    double childAspectRatio = isLandscape
+        ? (screenWidth / screenHeight) * 1.2
+        : (screenWidth / screenHeight) * 0.9;
+
+    // Tamaño máximo y mínimo de cada tarjeta
+    double cardWidth = (screenWidth / crossAxisCount) * 0.9;
+    double cardHeight = screenHeight * (isLandscape ? 0.35 : 0.25);
+    cardWidth = cardWidth.clamp(100.0, 400.0);
+    cardHeight = cardHeight.clamp(120.0, 400.0);
 
     return SizedBox(
-      height:
-          screenHeight * 0.75, // Ajustar altura en función del alto de pantalla
-      width:
-          screenWidth * 0.9, // Ajustar ancho en función del ancho de pantalla
+      height: screenHeight * (isLandscape ? 0.85 : 0.75),
+      width: screenWidth * 0.95,
       child: Center(
         child: Scrollbar(
           controller: scrollController,
@@ -87,7 +93,7 @@ class _GridViewImagesComponentState extends State<GridViewImagesComponent> {
               crossAxisCount: crossAxisCount,
               crossAxisSpacing: 20,
               mainAxisSpacing: 20,
-              childAspectRatio: aspectRatio,
+              childAspectRatio: childAspectRatio,
             ),
             itemCount: widget.imagenes.length,
             itemBuilder: (context, index) {
@@ -107,16 +113,16 @@ class _GridViewImagesComponentState extends State<GridViewImagesComponent> {
                               setState(() {
                                 isChanged = true;
                                 selectedCards = List.generate(
-                                    widget.imagenes.length, (index) => false);
+                                  widget.imagenes.length,
+                                  (i) => false,
+                                );
                                 selectedCards[index] = true;
                               });
                               await widget.onTap!(index);
                             }
                           : () async => await agregarLista(imagen, context),
-                      width: screenWidth *
-                          0.4, // Ajustar tamaño en función del ancho de pantalla
-                      height: screenHeight *
-                          0.25, // Ajustar tamaño en función del alto de pantalla
+                      width: cardWidth,
+                      height: cardHeight,
                       borderThickness: 0.0,
                     ),
                   ),
@@ -124,7 +130,10 @@ class _GridViewImagesComponentState extends State<GridViewImagesComponent> {
                   Text(
                     imagen.nameOfImage ?? '',
                     style: const TextStyle(
-                        fontSize: 22, fontWeight: FontWeight.bold),
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               );

@@ -79,11 +79,14 @@ class CartdTextOrImageComponent extends StatelessWidget {
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
-                        child: CircularProgressIndicator()); // Cargando
+                      child: CircularProgressIndicator(),
+                    ); // Cargando
                   } else if (snapshot.hasError) {
                     return Center(
-                        child: Text(
-                            "Error al cargar la imagen: ${snapshot.error}"));
+                      child: Text(
+                        "Error al cargar la imagen: ${snapshot.error}",
+                      ),
+                    );
                   } else if (snapshot.hasData) {
                     return SizedBox(
                       width: width ?? 900,
@@ -92,7 +95,8 @@ class CartdTextOrImageComponent extends StatelessWidget {
                     );
                   } else {
                     return const Center(
-                        child: Text("No se pudo cargar la imagen"));
+                      child: Text("No se pudo cargar la imagen"),
+                    );
                   }
                 },
               ),
