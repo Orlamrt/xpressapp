@@ -23,8 +23,11 @@ class AlertImagesComponent extends StatefulWidget {
 
 class _AlertImagesComponentState extends State<AlertImagesComponent> {
   List<ImageModel> modeloImagenes = [];
-  late List<ImageModel> portadaImagenes =
-      ImageModel.getEspecificListModel(widget.imagenes, 'portada', widget.color);
+  late List<ImageModel> portadaImagenes = ImageModel.getEspecificListModel(
+    widget.imagenes,
+    'portada',
+    widget.color,
+  );
   late final imagenes = ImageModel.getListModel(widget.imagenes, widget.color);
 
   @override
@@ -57,8 +60,14 @@ class _AlertImagesComponentState extends State<AlertImagesComponent> {
       ruta += '${parts[i]}/';
     }
     print(ruta);
-    imagenesModel = ImageModel.getEspecificListModel(widget.imagenes, ruta, widget.color);
-    imagenesModel.removeWhere((element) => element.imagePath == portada.imagePath);
+    imagenesModel = ImageModel.getEspecificListModel(
+      widget.imagenes,
+      ruta,
+      widget.color,
+    );
+    imagenesModel.removeWhere(
+      (element) => element.imagePath == portada.imagePath,
+    );
     for (var i = 0; i < imagenesModel.length; i++) {
       print(imagenesModel[i].imagePath);
     }
@@ -90,27 +99,25 @@ class _AlertImagesComponentState extends State<AlertImagesComponent> {
         child: portadaImagenes.isNotEmpty
             ? ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width > 600 ? 1200 : MediaQuery.of(context).size.width,
+                  maxWidth: MediaQuery.of(context).size.width > 600
+                      ? 1200
+                      : MediaQuery.of(context).size.width,
                   maxHeight: 700, // Limitar la altura máxima
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    Expanded( // Permitir que ocupe el espacio disponible
+                    Expanded(
+                      // Permitir que ocupe el espacio disponible
                       child: GridViewImagesComponent(
                         imagenes: portadaImagenes,
                         onTap: onTap, // Aquí se pasa solo el onTap
                       ),
                     ),
-                    Container(
-                      height: 670,
-                      width: 3,
-                      color: widget.color,
-                    ),
-                    Expanded( // Permitir que ocupe el espacio disponible
-                      child: GridViewImagesComponent(
-                        imagenes: modeloImagenes,
-                      ),
+                    Container(height: 670, width: 3, color: widget.color),
+                    Expanded(
+                      // Permitir que ocupe el espacio disponible
+                      child: GridViewImagesComponent(imagenes: modeloImagenes),
                     ),
                   ],
                 ),
@@ -122,10 +129,7 @@ class _AlertImagesComponentState extends State<AlertImagesComponent> {
           onPressed: () {
             Navigator.of(context).pop();
           },
-          child: Icon(
-            Icons.arrow_forward_rounded,
-            color: widget.color,
-          ),
+          child: Icon(Icons.arrow_forward_rounded, color: widget.color),
         ),
       ],
     );

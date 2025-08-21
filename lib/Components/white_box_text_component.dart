@@ -34,15 +34,32 @@ class WhiteBoxTextComponent extends StatelessWidget {
 
   TextStyle? getStyle(BuildContext context) {
     final controller = Get.find<ControllerTeach>();
-    // definimos el estilo del texto en caso de que sea para una imagen
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Tamaños de fuente mínimos y máximos
+    const double minFontSize = 16.0;
+    const double maxFontSize = 32.0;
+
+    // Calcular el tamaño de fuente base
+    double baseFontSize = (screenWidth * 0.015).clamp(minFontSize, maxFontSize);
+
     if (isForImage) {
-      return Theme.of(context).textTheme.bodyMedium;
+      return Theme.of(context).textTheme.bodyMedium?.copyWith(
+        fontSize: baseFontSize,
+        fontWeight: FontWeight.bold,
+      );
     }
-    // modificamos la interfaz para cuando haya datos en la lista
+
     if (controller.imagenes.isEmpty) {
-      return Theme.of(context).textTheme.displayMedium;
+      return Theme.of(context).textTheme.displayMedium?.copyWith(
+        fontSize: baseFontSize * 1.5,
+        fontWeight: FontWeight.bold,
+      );
     } else {
-      return Theme.of(context).textTheme.titleLarge;
+      return Theme.of(context).textTheme.titleLarge?.copyWith(
+        fontSize: baseFontSize * 1.2,
+        fontWeight: FontWeight.w600,
+      );
     }
   }
 
@@ -51,14 +68,18 @@ class WhiteBoxTextComponent extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        border:
-            Border.all(color: borderColor, width: borderWidth), // Agregar borde
-        borderRadius:
-            BorderRadius.circular(3.0), // Bordes redondeados (opcional)
+        border: Border.all(
+          color: borderColor,
+          width: borderWidth,
+        ), // Agregar borde
+        borderRadius: BorderRadius.circular(
+          3.0,
+        ), // Bordes redondeados (opcional)
       ),
       padding: const EdgeInsets.all(10.0), // Espaciado interno
       child: Center(
-        child: isForImage &&
+        child:
+            isForImage &&
                 imagePath !=
                     null // Verifica si es para imagen y si hay una ruta de imagen
             ? Image.asset(

@@ -39,10 +39,7 @@ class _GridViewImagesComponentState extends State<GridViewImagesComponent> {
     if (!context.mounted) return;
 
     controller.imagenes.add(
-      ImageModel(
-        imagePath: imagen.imagePath,
-        color: imagen.color!,
-      ),
+      ImageModel(imagePath: imagen.imagePath, color: imagen.color!),
     );
 
     Navigator.of(context).pop();
@@ -54,29 +51,30 @@ class _GridViewImagesComponentState extends State<GridViewImagesComponent> {
     return selectedCards[index];
   }
 
-  Orientation obtenerRotacion(BuildContext context) {
-    return MediaQuery.of(context).orientation;
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Obtener el ancho y alto del dispositivo
-    double screenWidth = MediaQuery.of(context).size.width;
-    double screenHeight = MediaQuery.of(context).size.height;
-    Orientation orientacion = obtenerRotacion(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
 
-    // Ajustar valores en función del tamaño de la pantalla y la orientación
-    int crossAxisCount = (screenWidth > 600)
-        ? (orientacion == Orientation.portrait ? 3 : 4)
-        : (orientacion == Orientation.portrait ? 2 : 2);
-    double aspectRatio =
-        (screenWidth > 600) ? 0.8 : 0.7; // Proporción de aspecto ajustada
+    // Ajuste de columnas para pantallas grandes
+    int crossAxisCount;
+    if (screenWidth >= 1200) {
+      crossAxisCount = 4;
+    } else if (screenWidth >= 800) {
+      crossAxisCount = 3;
+    } else if (screenWidth >= 500) {
+      crossAxisCount = 2;
+    } else {
+      crossAxisCount = 1;
+    }
+
+    // Cálculo mejorado del tamaño de tarjetas
+    double cardWidth = (screenWidth / crossAxisCount) * 0.8;
+    cardWidth = cardWidth.clamp(150.0, 300.0);
 
     return SizedBox(
-      height:
-          screenHeight * 0.75, // Ajustar altura en función del alto de pantalla
-      width:
-          screenWidth * 0.9, // Ajustar ancho en función del ancho de pantalla
+      height: screenHeight * 0.8,
+      width: screenWidth * 0.95,
       child: Center(
         child: Scrollbar(
           controller: scrollController,
@@ -87,46 +85,60 @@ class _GridViewImagesComponentState extends State<GridViewImagesComponent> {
               crossAxisCount: crossAxisCount,
               crossAxisSpacing: 20,
               mainAxisSpacing: 20,
-              childAspectRatio: aspectRatio,
+              // Ajustamos la proporción para dar más espacio al texto
+              childAspectRatio: 0.85,
             ),
             itemCount: widget.imagenes.length,
             itemBuilder: (context, index) {
               final imagen = widget.imagenes[index];
 
-              return Column(
-                children: [
-                  Expanded(
-                    child: CartdTextOrImageComponent(
-                      color: imagen.color!,
-                      model: imagen,
-                      isImage: true,
-                      nameImage: false,
-                      isSelected: getIsSelected(index),
-                      onTap: widget.onTap != null
-                          ? () async {
-                              setState(() {
-                                isChanged = true;
-                                selectedCards = List.generate(
-                                    widget.imagenes.length, (index) => false);
-                                selectedCards[index] = true;
-                              });
-                              await widget.onTap!(index);
-                            }
-                          : () async => await agregarLista(imagen, context),
-                      width: screenWidth *
-                          0.4, // Ajustar tamaño en función del ancho de pantalla
-                      height: screenHeight *
-                          0.25, // Ajustar tamaño en función del alto de pantalla
-                      borderThickness: 0.0,
+              return Container(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  children: [
+                    // Contenedor para la imagen
+                    Expanded(
+                      flex: 7, // Ajustamos la proporción para la imagen
+                      child: CartdTextOrImageComponent(
+                        color: imagen.color!,
+                        model: imagen,
+                        isImage: true,
+                        nameImage: false,
+                        isSelected: getIsSelected(index),
+                        onTap: widget.onTap != null
+                            ? () async {
+                                setState(() {
+                                  isChanged = true;
+                                  selectedCards = List.generate(
+                                    widget.imagenes.length,
+                                    (i) => false,
+                                  );
+                                  selectedCards[index] = true;
+                                });
+                                await widget.onTap!(index);
+                              }
+                            : () async => await agregarLista(imagen, context),
+                        width: cardWidth,
+                        height: cardWidth,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    imagen.nameOfImage ?? '',
-                    style: const TextStyle(
-                        fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                ],
+                    // Contenedor para el texto
+                    Container(
+                      height: 40, // Altura fija para el texto
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        imagen.nameOfImage ?? '',
+                        style: TextStyle(
+                          fontSize: (screenWidth * 0.012).clamp(12.0, 18.0),
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               );
             },
           ),

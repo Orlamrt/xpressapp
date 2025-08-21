@@ -14,6 +14,7 @@ import 'package:xpressapp/Constants/mock_user.dart';
 import 'package:xpressapp/Constants/chat.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 
 class ControllerTeach extends GetxController {
   var imagenes = <ImageModel>[].obs;
@@ -54,93 +55,127 @@ class ControllerTeach extends GetxController {
 
   // Método para asignar un tutor a un paciente
   void assignTutorToPatient(String tutorEmail, String patientEmail) {
-    final tutor = tutors.firstWhere((tutor) => tutor.email == tutorEmail,
-        orElse: () => MockUser(name: '', email: '', password: '', role: ''));
+    final tutor = tutors.firstWhere(
+      (tutor) => tutor.email == tutorEmail,
+      orElse: () => MockUser(name: '', email: '', password: '', role: ''),
+    );
     final patient = patients.firstWhere(
-        (patient) => patient.email == patientEmail,
-        orElse: () => MockUser(name: '', email: '', password: '', role: ''));
+      (patient) => patient.email == patientEmail,
+      orElse: () => MockUser(name: '', email: '', password: '', role: ''),
+    );
 
     if (tutor.email.isEmpty || patient.email.isEmpty) {
-      Get.snackbar('Error', 'Tutor o paciente no encontrado',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Error',
+        'Tutor o paciente no encontrado',
+        snackPosition: SnackPosition.BOTTOM,
+      );
       return;
     }
 
     // Verificar si ya existe una asignación
-    final exists = assignments
-        .any((assignment) => assignment['patientEmail'] == patientEmail);
+    final exists = assignments.any(
+      (assignment) => assignment['patientEmail'] == patientEmail,
+    );
 
     if (exists) {
-      Get.snackbar('Error', 'El paciente ya tiene un tutor asignado',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Error',
+        'El paciente ya tiene un tutor asignado',
+        snackPosition: SnackPosition.BOTTOM,
+      );
       return;
     }
 
     // Guardar la asignación
     assignments.add({'tutorEmail': tutorEmail, 'patientEmail': patientEmail});
     _saveAssignmentToPreferences(tutorEmail, patientEmail);
-    Get.snackbar('Éxito', 'Tutor asignado correctamente',
-        snackPosition: SnackPosition.BOTTOM);
+    Get.snackbar(
+      'Éxito',
+      'Tutor asignado correctamente',
+      snackPosition: SnackPosition.BOTTOM,
+    );
   }
 
   // Guardar la asignación en SharedPreferences (puede usarse para pruebas locales)
   Future<void> _saveAssignmentToPreferences(
-      String tutorEmail, String patientEmail) async {
+    String tutorEmail,
+    String patientEmail,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('assignedTutor_$patientEmail', tutorEmail);
   }
 
   // Método para obtener la lista de imágenes de assets
   Future<List<String>> obtenerListaImagenes(String colorCarpeta) async {
-    List<String> archivosLocales = [];
-    List<String> archivosAssets = [];
+    List<String> archivos = [];
 
     try {
-      // 1. Directorio local de la app
-      final Directory appDocDir = await getApplicationDocumentsDirectory();
-      final String localDirPath = '${appDocDir.path}/imagenes/$colorCarpeta';
-      final Directory localDir = Directory(localDirPath);
+      if (kIsWeb) {
+        // Solo lee los assets en Web
+        final manifestContent = await rootBundle.loadString(
+          'AssetManifest.json',
+        );
+        final Map<String, dynamic> manifestMap = json.decode(manifestContent);
 
-      // 2. Verificar si hay archivos locales
-      if (await localDir.exists()) {
-        final archivos = localDir
-            .listSync(recursive: true)
-            .whereType<File>()
-            .where((file) =>
-                file.path.endsWith('.png') || file.path.endsWith('.jpg'))
+        archivos = manifestMap.keys
+            .where((path) => path.contains('assets/imagenes/$colorCarpeta/'))
             .toList();
+      } else {
+        // Código original para móviles/escritorio
+        final Directory appDocDir = await getApplicationDocumentsDirectory();
+        final String localDirPath = '${appDocDir.path}/imagenes/$colorCarpeta';
+        final Directory localDir = Directory(localDirPath);
 
-        if (archivos.isNotEmpty) {
-          archivosLocales = archivos.map((f) => f.path).toList();
-          return archivosLocales;
+        if (await localDir.exists()) {
+          final archivosLocales = localDir
+              .listSync(recursive: true)
+              .whereType<File>()
+              .where(
+                (file) =>
+                    file.path.endsWith('.png') || file.path.endsWith('.jpg'),
+              )
+              .toList();
+
+          if (archivosLocales.isNotEmpty) {
+            archivos = archivosLocales.map((f) => f.path).toList();
+            return archivos;
+          }
         }
+
+        final manifestContent = await rootBundle.loadString(
+          'AssetManifest.json',
+        );
+        final Map<String, dynamic> manifestMap = json.decode(manifestContent);
+
+        archivos = manifestMap.keys
+            .where((path) => path.contains('assets/imagenes/$colorCarpeta/'))
+            .toList();
       }
 
-      // 3. Si no hay archivos locales, usar los assets
-      final manifestContent = await rootBundle.loadString('AssetManifest.json');
-      final Map<String, dynamic> manifestMap = json.decode(manifestContent);
-
-      archivosAssets = manifestMap.keys
-          .where((path) => path.contains('assets/imagenes/$colorCarpeta/'))
-          .toList();
-
-      return archivosAssets;
+      return archivos;
     } catch (e) {
       print('Error al obtener lista de imágenes: $e');
       return [];
     }
   }
 
-// Método para copiar las imágenes desde los assets al almacenamiento local
+  // Método para copiar las imágenes desde los assets al almacenamiento local
   Future<void> copiarImagenesAssetsAlLocal() async {
+    if (kIsWeb) {
+      print("Saltando copia de imágenes en Web (no soportado)");
+      return;
+    }
+
     try {
       // Obtener directorio local de la app
       final Directory appDocDir = await getApplicationDocumentsDirectory();
       final String destinoBase = '${appDocDir.path}/imagenes';
 
       // Leer el AssetManifest.json
-      final String manifestContent =
-          await rootBundle.loadString('AssetManifest.json');
+      final String manifestContent = await rootBundle.loadString(
+        'AssetManifest.json',
+      );
       final Map<String, dynamic> manifestMap = json.decode(manifestContent);
 
       // Filtrar solo los paths que están en assets/imagenes/
@@ -154,8 +189,10 @@ class ControllerTeach extends GetxController {
         final List<int> bytes = data.buffer.asUint8List();
 
         // Obtener ruta relativa para mantener estructura de carpetas
-        final String relativePath =
-            assetPath.replaceFirst('assets/imagenes/', '');
+        final String relativePath = assetPath.replaceFirst(
+          'assets/imagenes/',
+          '',
+        );
         final String localPath = '$destinoBase/$relativePath';
 
         // Verificar si la imagen ya existe en el almacenamiento local
@@ -164,53 +201,56 @@ class ControllerTeach extends GetxController {
           continue; // Si la imagen ya existe, no hacer nada
         }
 
-        await localFile.parent
-            .create(recursive: true); // Crear carpetas si no existen
+        await localFile.parent.create(
+          recursive: true,
+        ); // Crear carpetas si no existen
         await localFile.writeAsBytes(bytes, flush: true); // Guardar imagen
 
         print(
-            'Imagen copiada a: $localPath'); // Registra que la imagen fue copiada
+          'Imagen copiada a: $localPath',
+        ); // Registra que la imagen fue copiada
       }
     } catch (e) {
       print('Error al copiar imágenes: $e');
     }
   }
 
- // Método para enviar la secuencia de pictogramas a la API Flask
-Future<String> enviarSolicitud(String sentence) async {
-  // URL de tu nueva API Flask
-  String apiUrl = 'http://72.60.25.229:5000/generate_sentence'; 
-  Map<String, String> headers = {'Content-Type': 'application/json'};
+  // Método para enviar la secuencia de pictogramas a la API Flask
+  Future<String> enviarSolicitud(String sentence) async {
+    // URL de tu nueva API Flask
+    String apiUrl = 'http://72.60.25.229:5000/generate_sentence';
+    Map<String, String> headers = {'Content-Type': 'application/json'};
 
-  // El backend espera 'sequence' con la oración sin procesar
-  String requestBody = jsonEncode({'sequence': sentence});
+    // El backend espera 'sequence' con la oración sin procesar
+    String requestBody = jsonEncode({'sequence': sentence});
 
-  try {
-    isLoading.value = true;
+    try {
+      isLoading.value = true;
 
-    var response = await http
-        .post(Uri.parse(apiUrl), headers: headers, body: requestBody)
-        .timeout(const Duration(seconds: 15));
+      var response = await http
+          .post(Uri.parse(apiUrl), headers: headers, body: requestBody)
+          .timeout(const Duration(seconds: 15));
 
-    isLoading.value = false;
+      isLoading.value = false;
 
-    if (response.statusCode == 200) {
-      Map<String, dynamic> data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        Map<String, dynamic> data = jsonDecode(response.body);
 
-      // Mostrar la oración generada por LLaMA
-      mostrarPopup(data['generated_sentence']);
-      return 'Ok';
-    } else {
-      mostrarPopup('El internet es inestable, vuelva a intentar más tarde');
+        // Mostrar la oración generada por LLaMA
+        mostrarPopup(data['generated_sentence']);
+        return 'Ok';
+      } else {
+        mostrarPopup('El internet es inestable, vuelva a intentar más tarde');
+        return 'Error';
+      }
+    } catch (error) {
+      isLoading.value = false;
+      mostrarPopup(
+        'Hubo un error inesperado, por favor vuelva a intentar más tarde',
+      );
       return 'Error';
     }
-  } catch (error) {
-    isLoading.value = false;
-    mostrarPopup('Hubo un error inesperado, por favor vuelva a intentar más tarde');
-    return 'Error';
   }
-}
-
 
   // Método para mostrar un popup con la frase generada
   void mostrarPopup(String fraseGenerada) async {
@@ -226,7 +266,7 @@ Future<String> enviarSolicitud(String sentence) async {
             Get.back();
           },
           child: const Icon(Icons.arrow_forward_rounded),
-        )
+        ),
       ],
     );
   }
@@ -394,11 +434,11 @@ Future<String> enviarSolicitud(String sentence) async {
       tasks.addAll([
         {
           'task_name': 'Tarea 1',
-          'task_description': 'Descripción de la tarea 1'
+          'task_description': 'Descripción de la tarea 1',
         },
         {
           'task_name': 'Tarea 2',
-          'task_description': 'Descripción de la tarea 2'
+          'task_description': 'Descripción de la tarea 2',
         },
       ]);
     }
@@ -414,12 +454,14 @@ Future<String> enviarSolicitud(String sentence) async {
         Get.off(() => const PrincipalViewTutor()); // Navega a la vista de Admin
         break;
       case 'Terapeuta':
-        Get.off(() =>
-            const PrincipalViewTerapeuta()); // Navega a la vista de Terapeuta
+        Get.off(
+          () => const PrincipalViewTerapeuta(),
+        ); // Navega a la vista de Terapeuta
         break;
       case 'Paciente':
-        Get.off(() =>
-            const PrincipalViewPaciente()); // Navega a la vista de Paciente
+        Get.off(
+          () => const PrincipalViewPaciente(),
+        ); // Navega a la vista de Paciente
         break;
       default:
         Get.snackbar(
@@ -461,17 +503,16 @@ Future<String> enviarSolicitud(String sentence) async {
   void sendMessage(String text, String sender) {
     if (text.isNotEmpty) {
       messages.add(
-        Message(
-          text: text,
-          sender: sender,
-          timestamp: DateTime.now(),
-        ),
+        Message(text: text, sender: sender, timestamp: DateTime.now()),
       );
     }
   }
 
   void uploadTherapistInformation(
-      String name, String specialization, String bio) {
+    String name,
+    String specialization,
+    String bio,
+  ) {
     // Ejemplo básico:
     print('Nombre: $name');
     print('Especialización: $specialization');
@@ -487,7 +528,8 @@ Future<String> enviarSolicitud(String sentence) async {
     // Asegúrate de cambiar 'your-server-url' a la URL de tu servidor real
     final response = await http.post(
       Uri.parse(
-          'http://72.60.25.229:8080/get-patient-qr'), // Cambia esta URL por la de tu servidor
+        'http://72.60.25.229:8080/get-patient-qr',
+      ), // Cambia esta URL por la de tu servidor
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'uuid': patientUuid}),
     );
