@@ -55,33 +55,25 @@ class _GridViewImagesComponentState extends State<GridViewImagesComponent> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final isLandscape = screenWidth > screenHeight;
 
-    // Determinar número de columnas según tamaño de pantalla y orientación
+    // Ajuste de columnas para pantallas grandes
     int crossAxisCount;
     if (screenWidth >= 1200) {
-      crossAxisCount = isLandscape ? 5 : 4;
+      crossAxisCount = 4;
     } else if (screenWidth >= 800) {
-      crossAxisCount = isLandscape ? 4 : 3;
+      crossAxisCount = 3;
     } else if (screenWidth >= 500) {
-      crossAxisCount = isLandscape ? 3 : 2;
+      crossAxisCount = 2;
     } else {
       crossAxisCount = 1;
     }
 
-    // Ajustar proporción de aspecto según orientación y tamaño de pantalla
-    double childAspectRatio = isLandscape
-        ? (screenWidth / screenHeight) * 1.2
-        : (screenWidth / screenHeight) * 0.9;
-
-    // Tamaño máximo y mínimo de cada tarjeta
-    double cardWidth = (screenWidth / crossAxisCount) * 0.9;
-    double cardHeight = screenHeight * (isLandscape ? 0.35 : 0.25);
-    cardWidth = cardWidth.clamp(100.0, 400.0);
-    cardHeight = cardHeight.clamp(120.0, 400.0);
+    // Cálculo mejorado del tamaño de tarjetas
+    double cardWidth = (screenWidth / crossAxisCount) * 0.8;
+    cardWidth = cardWidth.clamp(150.0, 300.0);
 
     return SizedBox(
-      height: screenHeight * (isLandscape ? 0.85 : 0.75),
+      height: screenHeight * 0.8,
       width: screenWidth * 0.95,
       child: Center(
         child: Scrollbar(
@@ -93,49 +85,60 @@ class _GridViewImagesComponentState extends State<GridViewImagesComponent> {
               crossAxisCount: crossAxisCount,
               crossAxisSpacing: 20,
               mainAxisSpacing: 20,
-              childAspectRatio: childAspectRatio,
+              // Ajustamos la proporción para dar más espacio al texto
+              childAspectRatio: 0.85,
             ),
             itemCount: widget.imagenes.length,
             itemBuilder: (context, index) {
               final imagen = widget.imagenes[index];
 
-              return Column(
-                children: [
-                  Expanded(
-                    child: CartdTextOrImageComponent(
-                      color: imagen.color!,
-                      model: imagen,
-                      isImage: true,
-                      nameImage: false,
-                      isSelected: getIsSelected(index),
-                      onTap: widget.onTap != null
-                          ? () async {
-                              setState(() {
-                                isChanged = true;
-                                selectedCards = List.generate(
-                                  widget.imagenes.length,
-                                  (i) => false,
-                                );
-                                selectedCards[index] = true;
-                              });
-                              await widget.onTap!(index);
-                            }
-                          : () async => await agregarLista(imagen, context),
-                      width: cardWidth,
-                      height: cardHeight,
-                      borderThickness: 0.0,
+              return Container(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  children: [
+                    // Contenedor para la imagen
+                    Expanded(
+                      flex: 7, // Ajustamos la proporción para la imagen
+                      child: CartdTextOrImageComponent(
+                        color: imagen.color!,
+                        model: imagen,
+                        isImage: true,
+                        nameImage: false,
+                        isSelected: getIsSelected(index),
+                        onTap: widget.onTap != null
+                            ? () async {
+                                setState(() {
+                                  isChanged = true;
+                                  selectedCards = List.generate(
+                                    widget.imagenes.length,
+                                    (i) => false,
+                                  );
+                                  selectedCards[index] = true;
+                                });
+                                await widget.onTap!(index);
+                              }
+                            : () async => await agregarLista(imagen, context),
+                        width: cardWidth,
+                        height: cardWidth,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    imagen.nameOfImage ?? '',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                    // Contenedor para el texto
+                    Container(
+                      height: 40, // Altura fija para el texto
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        imagen.nameOfImage ?? '',
+                        style: TextStyle(
+                          fontSize: (screenWidth * 0.012).clamp(12.0, 18.0),
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                  ],
+                ),
               );
             },
           ),
