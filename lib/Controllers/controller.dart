@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import 'package:xpressapp/Controllers/sound_controller.dart';
 import 'package:xpressapp/Models/image_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xpressapp/Views/principal_view.dart';
@@ -18,7 +19,8 @@ import 'package:flutter/foundation.dart';
 
 class ControllerTeach extends GetxController {
   var imagenes = <ImageModel>[].obs;
-  final flutterTts = FlutterTts();
+  //final flutterTts = FlutterTts();
+  final soundController = Get.find<SoundController>();
   var isLoading = false.obs;
   var isAuthenticated = false.obs;
   // Lista observable de mensajes
@@ -272,15 +274,19 @@ class ControllerTeach extends GetxController {
   }
 
   // Método para leer en voz la frase generada
+  //Future<void> tellPhrase(String text) async {
+  // await flutterTts.setLanguage('es-ES');
+  // await flutterTts.setSpeechRate(0.6);
+  // await flutterTts.speak(text);
+  //}
+
   Future<void> tellPhrase(String text) async {
-    await flutterTts.setLanguage('es-ES');
-    await flutterTts.setSpeechRate(0.6);
-    await flutterTts.speak(text);
+    await soundController.speak(text);
   }
 
   // Método para detener la reproducción de texto
   Future<void> stopPhrase() async {
-    await flutterTts.stop();
+    await soundController.stop();
   }
 
   // Método para insertar un código

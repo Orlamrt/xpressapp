@@ -5,6 +5,7 @@ import 'package:xpressapp/Components/selected_image_list_component.dart';
 import 'package:xpressapp/Constants/colors.dart';
 import 'package:xpressapp/Controllers/controller.dart';
 import 'package:xpressapp/Models/image_model.dart';
+import 'package:xpressapp/Views/voice_settings_view.dart'; // Nuevo import
 
 class InicioView extends StatefulWidget {
   const InicioView({super.key});
@@ -39,6 +40,17 @@ class _InicioViewState extends State<InicioView> {
             ),
             automaticallyImplyLeading: false,
             actions: [
+              //se agrego un boton para la configuracion de voz
+              IconButton(
+                icon: const Icon(
+                  Icons.settings_voice,
+                  color: Color(0xDDD96C94),
+                  size: 28,
+                ),
+                onPressed: () => Get.to(() => VoiceSettingsView()),
+              ),
+
+              // Aqui termina el cambio
               if (controller.imagenes.isNotEmpty)
                 if (controller.isLoading.value)
                   const Padding(
@@ -76,7 +88,8 @@ class _InicioViewState extends State<InicioView> {
                   // Imágenes seleccionadas en la parte superior
                   if (controller.imagenes.isNotEmpty)
                     Expanded(
-                      flex: 2, // Puedes ajustar el flex para el espacio que ocupa
+                      flex:
+                          2, // Puedes ajustar el flex para el espacio que ocupa
                       child: SelectedImageListComponent(),
                     ),
 

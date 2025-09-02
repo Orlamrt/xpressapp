@@ -85,19 +85,11 @@ class BottomNavigationBarComponent extends StatelessWidget {
     return BottomNavigationBarItem(
       icon: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
-        transitionBuilder: (child, animation) => ScaleTransition(
-          scale: animation,
-          child: child,
-        ),
-        child: Icon(
-          icon,
-          key: ValueKey(icon),
-        ),
+        transitionBuilder: (child, animation) =>
+            ScaleTransition(scale: animation, child: child),
+        child: Icon(icon, key: ValueKey(icon)),
       ),
-      activeIcon: Icon(
-        activeIcon,
-        color: const Color(0xDDD96C94),
-      ),
+      activeIcon: Icon(activeIcon, color: const Color(0xDDD96C94)),
       label: label,
     );
   }
