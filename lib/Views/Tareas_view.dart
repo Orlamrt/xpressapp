@@ -29,18 +29,17 @@ class _CodeVerState extends State<CodeVer> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Tareas Pendientes'),
-          automaticallyImplyLeading: false, 
-           backgroundColor: const Color(0xFFF2DCD8),
+          automaticallyImplyLeading: false,
+          backgroundColor: const Color(0xFFF2DCD8),
           titleTextStyle: const TextStyle(
-              fontSize: 32,
-              color: Color(0xDDD96C94),
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Roboto',
-            ),// Esto elimina la flecha de regreso en el AppBar
+            fontSize: 32,
+            color: Color(0xDDD96C94),
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Roboto',
+          ), // Esto elimina la flecha de regreso en el AppBar
         ),
-         backgroundColor: const Color(0xFFF2DCD8),
+        backgroundColor: const Color(0xFFF2DCD8),
         body: Padding(
-        
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
@@ -53,15 +52,18 @@ class _CodeVerState extends State<CodeVer> {
                       decoration: BoxDecoration(
                         color: const Color(0xFFF2DCD8),
                         borderRadius: BorderRadius.circular(8),
-                        
                       ),
                       child: ListView.builder(
                         padding: const EdgeInsets.all(8),
                         itemCount: controller.tasks.length,
                         itemBuilder: (context, index) {
                           var task = controller.tasks[index];
-                          bool isCompleted = task['is_completed'] == 'true'; // Verifica si la tarea está completada
-                          bool isNotCompleted = task['is_not_completed'] == 'true'; // Verifica si la tarea no está completada
+                          bool isCompleted =
+                              task['is_completed'] ==
+                              'true'; // Verifica si la tarea está completada
+                          bool isNotCompleted =
+                              task['is_not_completed'] ==
+                              'true'; // Verifica si la tarea no está completada
 
                           return Container(
                             margin: const EdgeInsets.symmetric(vertical: 4),
@@ -92,9 +94,20 @@ class _CodeVerState extends State<CodeVer> {
                                         onChanged: (bool? value) {
                                           // Actualiza el estado de la tarea
                                           setState(() {
-                                            task['is_completed'] = value == true ? 'true' : 'false';
+                                            task['is_completed'] = value == true
+                                                ? 'true'
+                                                : 'false';
                                             // Llama a un método en el controlador para actualizar el backend
                                             // controller.updateTaskStatus(task);
+
+                                            //  Notificación si la tarea se completa
+                                            if (value == true) {
+                                              Get.find<ControllerTeach>()
+                                                  .notificationService
+                                                  .showTaskCompletionNotification(
+                                                    task['task_name']!,
+                                                  );
+                                            }
                                           });
                                         },
                                       ),
@@ -109,7 +122,10 @@ class _CodeVerState extends State<CodeVer> {
                                         onChanged: (bool? value) {
                                           // Actualiza el estado de la tarea
                                           setState(() {
-                                            task['is_not_completed'] = value == true ? 'true' : 'false';
+                                            task['is_not_completed'] =
+                                                value == true
+                                                ? 'true'
+                                                : 'false';
                                             // Llama a un método en el controlador para actualizar el backend
                                             // controller.updateTaskStatus(task);
                                           });

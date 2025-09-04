@@ -3,6 +3,9 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:get/get.dart';
+
+import 'package:xpressapp/Controllers/controller.dart';
 
 class AgendarView extends StatefulWidget {
   const AgendarView({super.key});
@@ -132,6 +135,16 @@ class _AgendarViewState extends State<AgendarView> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Cita guardada exitosamente')),
           );
+
+          // 🔔 Aquí se disparan las notificaciones
+          await a.find<ControllerTeach>().notificationService
+              .showAppointmentConfirmation(
+                _patientNameController.text,
+                fechaCita,
+              );
+
+          await Get.find<ControllerTeach>().notificationService
+              .showAppointmentReminder(_patientNameController.text, fechaCita);
         } else {
           ScaffoldMessenger.of(
             context,

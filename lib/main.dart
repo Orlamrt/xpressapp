@@ -4,6 +4,7 @@ import 'package:xpressapp/Controllers/controller.dart';
 import 'package:xpressapp/Controllers/sound_controller.dart'; // Nuevo import
 import 'package:xpressapp/Views/star_session.dart';
 import 'package:xpressapp/Views/principal_viewTutor.dart';
+import 'package:xpressapp/Services/notification_service.dart'; // nuevo de las notificaciones
 
 void main() {
   // Asegurarse de que las vinculaciones de Flutter estén inicializadas
@@ -14,6 +15,10 @@ void main() {
 
   // Luego inicializar el ControllerTeach
   Get.put(ControllerTeach());
+
+  // Inicializar notificaciones
+  final notificationService = NotificationService();
+  notificationService.initializeNotifications();
 
   runApp(const MyApp());
 }

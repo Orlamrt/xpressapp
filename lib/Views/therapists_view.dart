@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:xpressapp/Controllers/controller.dart'; // Importa tu controlador principal
 
 class TherapistsView extends StatelessWidget {
   // Lista de terapeutas simulada para mostrar en la vista
@@ -9,7 +11,8 @@ class TherapistsView extends StatelessWidget {
       experience: 5,
       rating: 4.8,
       imageUrl: 'https://via.placeholder.com/150', // URL de imagen de ejemplo
-      description: 'Especialista en psicología infantil con enfoque en desarrollo emocional y conductual de niños.',
+      description:
+          'Especialista en psicología infantil con enfoque en desarrollo emocional y conductual de niños.',
     ),
     Therapist(
       name: 'Lic. Carlos Pérez',
@@ -17,7 +20,8 @@ class TherapistsView extends StatelessWidget {
       experience: 8,
       rating: 4.5,
       imageUrl: 'https://via.placeholder.com/150',
-      description: 'Experto en terapia familiar y resolución de conflictos para mejorar la dinámica familiar.',
+      description:
+          'Experto en terapia familiar y resolución de conflictos para mejorar la dinámica familiar.',
     ),
     Therapist(
       name: 'Dra. María García',
@@ -25,7 +29,8 @@ class TherapistsView extends StatelessWidget {
       experience: 10,
       rating: 4.9,
       imageUrl: 'https://via.placeholder.com/150',
-      description: 'Psicóloga clínica con amplia experiencia en tratamiento de trastornos mentales y emocionales.',
+      description:
+          'Psicóloga clínica con amplia experiencia en tratamiento de trastornos mentales y emocionales.',
     ),
   ];
 
@@ -67,7 +72,10 @@ class TherapistsView extends StatelessWidget {
                 ),
                 title: Text(
                   therapist.name,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
                 ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,7 +85,10 @@ class TherapistsView extends StatelessWidget {
                     Row(
                       children: [
                         const Icon(Icons.star, color: Colors.amber, size: 16),
-                        Text('${therapist.rating}', style: const TextStyle(fontSize: 14)),
+                        Text(
+                          '${therapist.rating}',
+                          style: const TextStyle(fontSize: 14),
+                        ),
                       ],
                     ),
                   ],
@@ -93,7 +104,9 @@ class TherapistsView extends StatelessWidget {
                       context: context,
                       builder: (context) => AlertDialog(
                         title: Text('Contratar a ${therapist.name}'),
-                        content: Text('¿Deseas contratar los servicios de ${therapist.name}?'),
+                        content: Text(
+                          '¿Deseas contratar los servicios de ${therapist.name}?',
+                        ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(),
@@ -103,9 +116,19 @@ class TherapistsView extends StatelessWidget {
                             onPressed: () {
                               // Acción de contratación
                               Navigator.of(context).pop();
+
+                              //  Notificación de contratación
+                              Get.find<ControllerTeach>().notificationService
+                                  .showTherapistHiredNotification(
+                                    therapist.name,
+                                  );
+
+                              // SnackBar de confirmación
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('Has contratado a ${therapist.name}'),
+                                  content: Text(
+                                    'Has contratado a ${therapist.name}',
+                                  ),
                                 ),
                               );
                             },

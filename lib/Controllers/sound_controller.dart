@@ -16,8 +16,6 @@ class SoundController extends GetxController {
     {"name": "Voz Masculina Grave", "pitch": 0.8, "rate": 0.45},
     {"name": "Voz Femenina Normal", "pitch": 1.2, "rate": 0.5},
     {"name": "Voz Femenina Suave", "pitch": 1.4, "rate": 0.55},
-    {"name": "Voz Infantil", "pitch": 1.6, "rate": 0.6},
-    {"name": "Voz Adulto Mayor", "pitch": 0.9, "rate": 0.4},
   ];
 
   @override
@@ -27,16 +25,20 @@ class SoundController extends GetxController {
   }
 
   Future<void> _initTTS() async {
-    await flutterTts.setLanguage("es-ES");
-    await flutterTts.setSpeechRate(speechRate.value);
-    await flutterTts.setPitch(pitch.value);
+    try {
+      await flutterTts.setLanguage("es-ES");
+      await flutterTts.setSpeechRate(speechRate.value);
+      await flutterTts.setPitch(pitch.value);
 
-    // Configurar voces personalizadas
-    availableVoices.value = customVoices;
+      // Configurar voces personalizadas
+      availableVoices.value = customVoices;
 
-    if (availableVoices.isNotEmpty) {
-      selectedVoice.value = availableVoices[0]["name"]!;
-      await _applyVoiceSettings(availableVoices[0]);
+      if (availableVoices.isNotEmpty) {
+        selectedVoice.value = availableVoices[0]["name"];
+        await _applyVoiceSettings(availableVoices[0]);
+      }
+    } catch (e) {
+      print('Error al inicializar TTS: $e');
     }
   }
 
@@ -45,35 +47,51 @@ class SoundController extends GetxController {
       speechRate.value = value;
       await flutterTts.setSpeechRate(value);
     } catch (e) {
-      print('Error al ajustar la velocidad: $e');
+      print('Error al ajustar velocidad: $e');
     }
   }
 
   Future<void> _applyVoiceSettings(Map<String, dynamic> voiceSettings) async {
-    await flutterTts.setPitch(voiceSettings["pitch"]);
-    await flutterTts.setSpeechRate(voiceSettings["rate"]);
-    pitch.value = voiceSettings["pitch"];
-    speechRate.value = voiceSettings["rate"];
+    try {
+      await flutterTts.setPitch(voiceSettings["pitch"]);
+      await flutterTts.setSpeechRate(voiceSettings["rate"]);
+      pitch.value = voiceSettings["pitch"];
+      speechRate.value = voiceSettings["rate"];
+    } catch (e) {
+      print('Error al aplicar configuración de voz: $e');
+    }
   }
 
   Future<void> setVoice(String voiceName) async {
-    final selectedVoiceSettings = customVoices.firstWhere(
-      (voice) => voice["name"] == voiceName,
-      orElse: () => customVoices[0],
-    );
+    try {
+      final selectedVoiceSettings = customVoices.firstWhere(
+        (voice) => voice["name"] == voiceName,
+        orElse: () => customVoices[0],
+      );
 
-    selectedVoice.value = voiceName;
-    await _applyVoiceSettings(selectedVoiceSettings);
+      selectedVoice.value = voiceName;
+      await _applyVoiceSettings(selectedVoiceSettings);
+    } catch (e) {
+      print('Error al cambiar voz: $e');
+    }
   }
 
   Future<void> speak(String text) async {
     if (isSoundEnabled.value) {
-      await flutterTts.speak(text);
+      try {
+        await flutterTts.speak(text);
+      } catch (e) {
+        print('Error al reproducir texto: $e');
+      }
     }
   }
 
   Future<void> stop() async {
-    await flutterTts.stop();
+    try {
+      await flutterTts.stop();
+    } catch (e) {
+      print('Error al detener reproducción: $e');
+    }
   }
 
   void toggleSound() {
@@ -81,5 +99,11 @@ class SoundController extends GetxController {
     if (!isSoundEnabled.value) {
       stop();
     }
+  }
+
+  @override
+  void onClose() {
+    flutterTts.stop();
+    super.onClose();
   }
 }

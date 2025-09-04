@@ -9,9 +9,7 @@ class ChatViewTerapeuta extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Chat con el Tutor'),
-      ),
+      appBar: AppBar(title: const Text('Chat con el Tutor')),
       body: Column(
         children: [
           // Lista de mensajes
@@ -21,15 +19,23 @@ class ChatViewTerapeuta extends StatelessWidget {
                 reverse: true,
                 itemCount: controller.messages.length,
                 itemBuilder: (context, index) {
-                  final message = controller.messages[controller.messages.length - 1 - index];
+                  final message = controller
+                      .messages[controller.messages.length - 1 - index];
                   final isTerapeuta = message.sender == 'terapeuta';
                   return Align(
-                    alignment: isTerapeuta ? Alignment.centerRight : Alignment.centerLeft,
+                    alignment: isTerapeuta
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
                     child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                      margin: const EdgeInsets.symmetric(
+                        vertical: 4,
+                        horizontal: 8,
+                      ),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: isTerapeuta ? Colors.purpleAccent : Colors.greenAccent,
+                        color: isTerapeuta
+                            ? Colors.purpleAccent
+                            : Colors.greenAccent,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
@@ -59,8 +65,16 @@ class ChatViewTerapeuta extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.send),
                   onPressed: () {
+                    if (messageController.text.trim().isEmpty) return;
+
                     // Envía el mensaje como terapeuta
                     controller.sendMessage(messageController.text, 'terapeuta');
+
+                    //  Notificar  sobre el nuevo mensaje
+                    controller.notificationService.showNewMessageNotification(
+                      'Terapeuta',
+                      messageController.text,
+                    );
                     messageController.clear();
                   },
                 ),
