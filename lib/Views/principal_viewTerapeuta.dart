@@ -25,6 +25,10 @@ class _PrincipalViewState extends State<PrincipalViewTerapeuta> {
 
   @override
   Widget build(BuildContext context) {
+    // Inicializar notificaciones para terapeuta
+    final controller = Get.find<ControllerTeach>();
+    controller.notificationService.initializeNotifications();
+
     return Scaffold(
       body: Obx(() {
         // Actualiza dinámicamente las vistas cuando cambia el estado de autenticación
@@ -45,7 +49,8 @@ class _PrincipalViewState extends State<PrincipalViewTerapeuta> {
                         return const Center(child: CircularProgressIndicator());
                       } else if (snapshot.hasError) {
                         return const Center(
-                            child: Text('Error al cargar datos'));
+                          child: Text('Error al cargar datos'),
+                        );
                       } else {
                         final data = snapshot.data as Map<String, String>;
                         return ProfileView(
@@ -62,7 +67,7 @@ class _PrincipalViewState extends State<PrincipalViewTerapeuta> {
                 ? const AgendarView()
                 : const PrincipalInicio(),
             ChatViewTerapeuta(),
-            UploadInformationView()
+            UploadInformationView(),
           ],
         );
       }),
@@ -82,7 +87,8 @@ class _PrincipalViewState extends State<PrincipalViewTerapeuta> {
     final prefs = await SharedPreferences.getInstance();
     final userName = prefs.getString('userName') ?? 'No disponible';
     final userEmail = prefs.getString('userEmail') ?? 'No disponible';
-    final userRole = prefs.getString('userRole') ??
+    final userRole =
+        prefs.getString('userRole') ??
         'No disponible'; // Obtén el rol del usuario aquí
     return {'userName': userName, 'userEmail': userEmail, 'userRole': userRole};
   }

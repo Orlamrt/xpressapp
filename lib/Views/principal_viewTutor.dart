@@ -42,6 +42,10 @@ class _PrincipalViewTutorState extends State<PrincipalViewTutor> {
 
   @override
   Widget build(BuildContext context) {
+    // Inicializar notificaciones para paciente
+    final controller = Get.find<ControllerTeach>();
+    controller.notificationService.initializeNotifications();
+
     return Scaffold(
       body: Obx(() {
         return PageView(
@@ -61,7 +65,8 @@ class _PrincipalViewTutorState extends State<PrincipalViewTutor> {
                         return const Center(child: CircularProgressIndicator());
                       } else if (snapshot.hasError) {
                         return const Center(
-                            child: Text('Error al cargar datos'));
+                          child: Text('Error al cargar datos'),
+                        );
                       } else {
                         final data = snapshot.data ?? {};
                         return ProfileView(
@@ -81,7 +86,7 @@ class _PrincipalViewTutorState extends State<PrincipalViewTutor> {
                 : const PrincipalInicio(),
             AssignView(),
             TherapistsView(),
-            AllChatsView()
+            AllChatsView(),
           ],
         );
       }),

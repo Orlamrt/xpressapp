@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
-
+import 'package:get/get.dart';
+import 'package:xpressapp/Controllers/controller.dart';
 
 class ChatView extends StatelessWidget {
-  const ChatView({super.key});
+  ChatView({super.key});
+
+  final ControllerTeach controller = Get.find<ControllerTeach>();
+  final TextEditingController messageController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -71,10 +75,7 @@ class ChatView extends StatelessWidget {
                     child: const TextField(
                       decoration: InputDecoration(
                         hintText: 'Escribe un mensaje...',
-                        hintStyle: TextStyle(
-                          color: Color(0xDDD96C94),
-                          
-                        ),
+                        hintStyle: TextStyle(color: Color(0xDDD96C94)),
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: 20,
                           vertical: 14,
@@ -105,6 +106,19 @@ class ChatView extends StatelessWidget {
                     icon: const Icon(Icons.send, color: Colors.white),
                     onPressed: () {
                       // Lógica de envío se implementará aquí
+
+                      final messageText = messageController.text.trim();
+                      if (messageText.isEmpty) return;
+
+                      // Enviar mensaje como tutor
+                      controller.sendMessage(messageText, 'tutor');
+                      // 🔔 Notificación al terapeuta
+                      controller.notificationService.showNewMessageNotification(
+                        'Tutor',
+                        messageText,
+                      );
+
+                      messageController.clear();
                     },
                   ),
                 ),
@@ -130,23 +144,14 @@ class ChatView extends StatelessWidget {
           constraints: BoxConstraints(
             maxWidth: MediaQuery.of(context).size.width * 0.75,
           ),
-          padding: const EdgeInsets.symmetric(
-            vertical: 12,
-            horizontal: 16,
-          ),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           decoration: BoxDecoration(
-            color: isMe 
-                ? const Color(0xDDD96C94)
-                : Colors.white,
+            color: isMe ? const Color(0xDDD96C94) : Colors.white,
             borderRadius: BorderRadius.only(
               topLeft: const Radius.circular(15),
               topRight: const Radius.circular(15),
-              bottomLeft: isMe 
-                  ? const Radius.circular(15)
-                  : Radius.zero,
-              bottomRight: isMe 
-                  ? Radius.zero
-                  : const Radius.circular(15),
+              bottomLeft: isMe ? const Radius.circular(15) : Radius.zero,
+              bottomRight: isMe ? Radius.zero : const Radius.circular(15),
             ),
             boxShadow: [
               BoxShadow(

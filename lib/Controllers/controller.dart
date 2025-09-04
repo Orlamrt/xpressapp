@@ -125,6 +125,9 @@ class ControllerTeach extends GetxController {
     _loadUserEmail();
     _initializeNotifications();
     _setupNotificationListeners();
+
+    // Inicializar notificaciones para todos los roles
+    notificationService.initializeNotifications();
   }
 
   // ==================== NOTIFICACIONES ====================

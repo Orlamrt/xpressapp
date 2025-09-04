@@ -5,14 +5,14 @@ import 'package:xpressapp/Controllers/controller.dart'; // Asegúrate de que la 
 class UploadInformationView extends StatelessWidget {
   final ControllerTeach controller = Get.find<ControllerTeach>();
   final TextEditingController nameController = TextEditingController();
-  final TextEditingController specializationController = TextEditingController();
+  final TextEditingController specializationController =
+      TextEditingController();
   final TextEditingController bioController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-
         return false;
       },
       child: Scaffold(
@@ -20,14 +20,14 @@ class UploadInformationView extends StatelessWidget {
           title: const Text('Subir Información'),
           automaticallyImplyLeading: false,
           backgroundColor: const Color(0xFFF2DCD8),
-           titleTextStyle: const TextStyle(
-              fontSize: 32,
-              color: Color(0xDDD96C94),
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Roboto',
-            ),
-        ) ,
-         backgroundColor: const Color(0xFFF2DCD8),
+          titleTextStyle: const TextStyle(
+            fontSize: 32,
+            color: Color(0xDDD96C94),
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Roboto',
+          ),
+        ),
+        backgroundColor: const Color(0xFFF2DCD8),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -62,7 +62,7 @@ class UploadInformationView extends StatelessWidget {
                 onPressed: () {
                   _submitInformation();
                 },
-                 style: ElevatedButton.styleFrom(
+                style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xDDD96C94),
                   foregroundColor: const Color(0xFFF2DCD8),
                   textStyle: const TextStyle(
@@ -101,6 +101,11 @@ class UploadInformationView extends StatelessWidget {
 
     // Ejemplo de cómo podrías hacerlo:
     controller.uploadTherapistInformation(name, specialization, bio);
+
+    //  Notificación local de éxito
+    Get.find<ControllerTeach>().notificationService.showProgressAchievement(
+      ' Información del terapeuta guardada exitosamente',
+    );
 
     Get.snackbar(
       'Éxito',

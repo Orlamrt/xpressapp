@@ -137,7 +137,7 @@ class _AgendarViewState extends State<AgendarView> {
           );
 
           // 🔔 Aquí se disparan las notificaciones
-          await a.find<ControllerTeach>().notificationService
+          await Get.find<ControllerTeach>().notificationService
               .showAppointmentConfirmation(
                 _patientNameController.text,
                 fechaCita,
