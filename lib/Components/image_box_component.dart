@@ -33,15 +33,18 @@ class ImageBoxComponent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final imageSize = width ?? screenWidth * 0.3; // 30% del ancho de pantalla
+
     return FutureBuilder<Image>(
       future: _loadImage(),
       builder: (BuildContext context, AsyncSnapshot<Image> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-              child: CircularProgressIndicator()); // Mostrar cargando
+          return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
           return Center(
-              child: Text("Error al cargar la imagen: ${snapshot.error}"));
+            child: Text("Error al cargar la imagen: ${snapshot.error}"),
+          );
         } else if (!snapshot.hasData) {
           return const Center(child: Text("No se pudo cargar la imagen"));
         }
@@ -49,19 +52,15 @@ class ImageBoxComponent extends StatelessWidget {
         final image = snapshot.data!;
 
         return !nameImage
-            ? SizedBox(
-                width: width ?? 150,
-                height: height ?? 150,
-                child: image,
-              )
+            ? SizedBox(width: imageSize, height: imageSize, child: image)
             : Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
                     color: Colors.white,
                     child: SizedBox(
-                      width: width ?? 150,
-                      height: height ?? 150,
+                      width: imageSize,
+                      height: imageSize,
                       child: image,
                     ),
                   ),

@@ -49,6 +49,7 @@ class CartdTextOrImageComponent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<ControllerTeach>();
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return InkWell(
       onTap: onTap,
@@ -70,29 +71,34 @@ class CartdTextOrImageComponent extends StatelessWidget {
           ],
         ),
         padding: !nameImage
-            ? EdgeInsets.all(controller.imagenes.isEmpty ? 30 : 15)
-            : const EdgeInsets.fromLTRB(15, 15, 15, 0),
+            ? EdgeInsets.all(controller.imagenes.isEmpty ? 20 : 10)
+            : const EdgeInsets.fromLTRB(10, 10, 10, 0),
         child: !isImage
             ? WhiteBoxTextComponent(text: text)
             : FutureBuilder<Image>(
                 future: _loadImage(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                        child: CircularProgressIndicator()); // Cargando
+                    return const Center(child: CircularProgressIndicator());
                   } else if (snapshot.hasError) {
                     return Center(
-                        child: Text(
-                            "Error al cargar la imagen: ${snapshot.error}"));
+                      child: Text(
+                        "Error al cargar la imagen: ${snapshot.error}",
+                      ),
+                    );
                   } else if (snapshot.hasData) {
                     return SizedBox(
-                      width: width ?? 900,
-                      height: height ?? 900,
-                      child: snapshot.data!,
+                      width: width ?? screenWidth * 0.2, // Cambiado aquí
+                      height: height ?? screenWidth * 0.2, // Cambiado aquí
+                      child: Image(
+                        image: snapshot.data!.image,
+                        fit: BoxFit.contain, // Cambiado a contain
+                      ),
                     );
                   } else {
                     return const Center(
-                        child: Text("No se pudo cargar la imagen"));
+                      child: Text("No se pudo cargar la imagen"),
+                    );
                   }
                 },
               ),

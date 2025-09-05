@@ -19,10 +19,7 @@ class BottomNavigationBarComponentTutor extends StatelessWidget {
     return BottomNavigationBar(
       backgroundColor: const Color(0xDDDFF2E7),
       items: const <BottomNavigationBarItem>[
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          label: 'Home',
-        ),
+        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
         BottomNavigationBarItem(
           icon: Icon(Icons.person_2_outlined),
           label: 'Profile',
@@ -33,21 +30,28 @@ class BottomNavigationBarComponentTutor extends StatelessWidget {
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.calendar_month_outlined),
-          label: 'Citas'
-          )
-          ,BottomNavigationBarItem(
-            icon: Icon(Icons.person_add_alt_1_outlined),
-            label: 'Asignar'),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.screen_search_desktop_outlined),
-              label: 'Terapeutas' ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.message_outlined),
-                label: 'Chats')
+          label: 'Citas',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person_add_alt_1_outlined),
+          label: 'Asignar',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.screen_search_desktop_outlined),
+          label: 'Terapeutas',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.message_outlined),
+          label: 'Chats',
+        ),
       ],
       currentIndex: currentIndex, // Establece el ítem seleccionado
-      selectedItemColor: const Color(0xfff555b7a6), // Color para el ítem seleccionado
-      unselectedItemColor: const Color(0xfff464959), // Color para los ítems no seleccionados
+      selectedItemColor: const Color(
+        0xfff555b7a6,
+      ), // Color para el ítem seleccionado
+      unselectedItemColor: const Color(
+        0xfff464959,
+      ), // Color para los ítems no seleccionados
       onTap: onTap,
     );
   }

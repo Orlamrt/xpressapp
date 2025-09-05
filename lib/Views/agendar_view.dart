@@ -3,6 +3,9 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:get/get.dart';
+
+import 'package:xpressapp/Controllers/controller.dart';
 
 class AgendarView extends StatefulWidget {
   const AgendarView({super.key});
@@ -22,7 +25,7 @@ class _AgendarViewState extends State<AgendarView> {
   Map<String, dynamic>? _selectedPatient;
   // Variables de estado que necesitarás:
   Map<String, dynamic>?
-      _patientInfo; // guardará { idPaciente, idTerapeuta, nombreTutor }
+  _patientInfo; // guardará { idPaciente, idTerapeuta, nombreTutor }
 
   Future<String?> _getTutorId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -90,9 +93,9 @@ class _AgendarViewState extends State<AgendarView> {
     await _buscarPacienteEnDB(nombre);
 
     if (_patientInfo == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Paciente no encontrado.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Paciente no encontrado.')));
       return;
     }
 
@@ -132,10 +135,20 @@ class _AgendarViewState extends State<AgendarView> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Cita guardada exitosamente')),
           );
+
+          // 🔔 Aquí se disparan las notificaciones
+          await Get.find<ControllerTeach>().notificationService
+              .showAppointmentConfirmation(
+                _patientNameController.text,
+                fechaCita,
+              );
+
+          await Get.find<ControllerTeach>().notificationService
+              .showAppointmentReminder(_patientNameController.text, fechaCita);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${data['message']}')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: ${data['message']}')));
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -143,9 +156,9 @@ class _AgendarViewState extends State<AgendarView> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
@@ -231,9 +244,7 @@ class _AgendarViewState extends State<AgendarView> {
   Widget _buildCalendarCard() {
     return Card(
       elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: TableCalendar(
@@ -261,16 +272,22 @@ class _AgendarViewState extends State<AgendarView> {
               fontWeight: FontWeight.bold,
             ),
             formatButtonVisible: false,
-            leftChevronIcon:
-                const Icon(Icons.chevron_left, color: Color(0xDDD96C94)),
-            rightChevronIcon:
-                const Icon(Icons.chevron_right, color: Color(0xDDD96C94)),
+            leftChevronIcon: const Icon(
+              Icons.chevron_left,
+              color: Color(0xDDD96C94),
+            ),
+            rightChevronIcon: const Icon(
+              Icons.chevron_right,
+              color: Color(0xDDD96C94),
+            ),
           ),
           daysOfWeekStyle: DaysOfWeekStyle(
-            weekdayStyle:
-                TextStyle(color: const Color(0xDDD96C94).withOpacity(0.8)),
-            weekendStyle:
-                TextStyle(color: const Color(0xDDD96C94).withOpacity(0.6)),
+            weekdayStyle: TextStyle(
+              color: const Color(0xDDD96C94).withOpacity(0.8),
+            ),
+            weekendStyle: TextStyle(
+              color: const Color(0xDDD96C94).withOpacity(0.6),
+            ),
           ),
           onDaySelected: (selectedDay, focusedDay) {
             setState(() => _selectedDate = selectedDay);
@@ -305,15 +322,11 @@ class _AgendarViewState extends State<AgendarView> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            icon: const Icon(
-              Icons.search,
-              size: 28,
-              color: Colors.white,
+            icon: const Icon(Icons.search, size: 28, color: Colors.white),
+            label: const Text(
+              'Buscar Paciente',
+              style: TextStyle(fontSize: 20),
             ),
-            label: const Text('Buscar Paciente',
-                style: TextStyle(
-                  fontSize: 20,
-                )),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xDDD96C94),
               foregroundColor: Colors.white,
@@ -328,7 +341,8 @@ class _AgendarViewState extends State<AgendarView> {
               if (nombre.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                      content: Text('Ingresa el nombre del paciente')),
+                    content: Text('Ingresa el nombre del paciente'),
+                  ),
                 );
                 return;
               }
@@ -343,8 +357,9 @@ class _AgendarViewState extends State<AgendarView> {
             decoration: BoxDecoration(
               color: const Color(0xDDD96C94).withOpacity(0.1),
               borderRadius: BorderRadius.circular(15),
-              border:
-                  Border.all(color: const Color(0xDDD96C94).withOpacity(0.3)),
+              border: Border.all(
+                color: const Color(0xDDD96C94).withOpacity(0.3),
+              ),
             ),
             child: Row(
               children: [
@@ -442,19 +457,13 @@ class _AgendarViewState extends State<AgendarView> {
 
   Widget _buildScheduleButton() {
     return ElevatedButton.icon(
-      icon: const Icon(
-        Icons.calendar_today,
-        size: 28,
-        color: Colors.white,
-      ),
+      icon: const Icon(Icons.calendar_today, size: 28, color: Colors.white),
       label: const Text('Agendar Cita'),
       style: ElevatedButton.styleFrom(
         backgroundColor: const Color(0xDDD96C94),
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 25),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         elevation: 8,
         textStyle: const TextStyle(
           fontSize: 20,

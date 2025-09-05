@@ -1,23 +1,96 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
-import 'package:xpressapp/Models/image_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
+
+//controladores y modelos
+import 'package:xpressapp/Controllers/sound_controller.dart';
+import 'package:xpressapp/Models/image_model.dart';
+import 'package:xpressapp/Constants/mock_user.dart';
+import 'package:xpressapp/Constants/chat.dart';
+
+//vistas
 import 'package:xpressapp/Views/principal_view.dart';
 import 'package:xpressapp/Views/principal_viewTerapeuta.dart';
 import 'package:xpressapp/Views/principal_viewTutor.dart';
 import 'package:xpressapp/Views/star_session.dart';
-import 'package:xpressapp/Constants/mock_user.dart';
-import 'package:xpressapp/Constants/chat.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:io';
+
+// notificaciones
+import 'package:xpressapp/services/notification_service.dart';
+
+// MODELOS DE ESTADÍSTICAS DE PROGRESO
+class ProgressStats {
+  int totalSessions;
+  int totalImagesUsed;
+  int successfulCommunications;
+  Map<String, int> categoryUsage;
+  Map<String, int> mostUsedImages;
+  DateTime lastSession;
+  List<SessionRecord> sessionHistory;
+
+  ProgressStats({
+    required this.totalSessions,
+    required this.totalImagesUsed,
+    required this.successfulCommunications,
+    required this.categoryUsage,
+    required this.mostUsedImages,
+    required this.lastSession,
+    required this.sessionHistory,
+  });
+
+  double get successRate {
+    if (totalSessions == 0) return 0.0;
+    return successfulCommunications / totalSessions;
+  }
+
+  String get mostUsedCategory {
+    if (categoryUsage.isEmpty) return 'Ninguna';
+    var sorted = categoryUsage.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return sorted.first.key;
+  }
+
+  // Obtener top 5 imágenes más usadas
+  List<MapEntry<String, int>> get topImages {
+    var sorted = mostUsedImages.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return sorted.take(5).toList();
+  }
+
+  // Obtener top 5 categorías más usadas
+  List<MapEntry<String, int>> get topCategories {
+    var sorted = categoryUsage.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return sorted.take(5).toList();
+  }
+}
+
+class SessionRecord {
+  final DateTime date;
+  final int imagesUsed;
+  final bool wasSuccessful;
+  final String phraseGenerated;
+
+  SessionRecord({
+    required this.date,
+    required this.imagesUsed,
+    required this.wasSuccessful,
+    required this.phraseGenerated,
+  });
+}
 
 class ControllerTeach extends GetxController {
   var imagenes = <ImageModel>[].obs;
-  final flutterTts = FlutterTts();
+  //final flutterTts = FlutterTts();
+  final soundController = Get.find<SoundController>();
+
   var isLoading = false.obs;
   var isAuthenticated = false.obs;
   // Lista observable de mensajes
@@ -26,10 +99,308 @@ class ControllerTeach extends GetxController {
   var patients = <MockUser>[].obs;
   var tutors = <MockUser>[].obs;
   var assignments = <Map<String, String>>[].obs; // Lista de asignaciones
+
+  // ESTADÍSTICAS DE PROGRESO
+  var progressStats = ProgressStats(
+    totalSessions: 0,
+    totalImagesUsed: 0,
+    successfulCommunications: 0,
+    categoryUsage: {},
+    mostUsedImages: {},
+    lastSession: DateTime.now(),
+    sessionHistory: [],
+  ).obs;
+
+  //servicio de notificaciones
+  final NotificationService notificationService = NotificationService();
+
+  // Email del usuario logueado (cargado desde SharedPreferences)
+  String _userEmail = '';
+  String get userEmail => _userEmail;
+
   @override
   void onInit() {
     super.onInit();
     _loadAuthStatus();
+    _loadUserEmail();
+    _initializeNotifications();
+    _setupNotificationListeners();
+
+    // Inicializar notificaciones para todos los roles
+    notificationService.initializeNotifications();
+  }
+
+  // ==================== NOTIFICACIONES ====================
+  Future<void> _initializeNotifications() async {
+    await notificationService.initializeNotifications();
+  }
+
+  void _setupNotificationListeners() {
+    //listener para mensajes nuevos
+    ever(messages, (List<Message> newMessages) {
+      if (newMessages.isNotEmpty) {
+        final lastMessage = newMessages.last;
+        if (lastMessage.sender != userEmail && userEmail.isNotEmpty) {
+          notificationService.showNewMessageNotification(
+            lastMessage.sender,
+            lastMessage.text,
+          );
+        }
+      }
+    });
+
+    //listner para progreso
+    ever(progressStats, (ProgressStats stats) {
+      checkForAchievements();
+    });
+  }
+
+  // Diálogo de éxito
+  Future<void> showSuccessDialog(String title, String message) async {
+    await Get.dialog(
+      AlertDialog(
+        backgroundColor: const Color(0xFFF2DCD8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: Color(0xFFD96C94),
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
+        ),
+        content: Text(message, style: const TextStyle(fontSize: 16)),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text(
+              'OK',
+              style: TextStyle(color: Color(0xFFD96C94), fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  //  Diálogo de confirmación
+  Future<bool> showConfirmationDialog(String title, String message) async {
+    final result = await Get.dialog<bool>(
+      AlertDialog(
+        backgroundColor: const Color(0xFFF2DCD8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: Color(0xFFD96C94),
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
+        ),
+        content: Text(message, style: const TextStyle(fontSize: 16)),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text(
+              'Confirmar',
+              style: TextStyle(color: Color(0xFFD96C94), fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
+  // Snackbar personalizado
+  void showCustomSnackbar(
+    String message, {
+    bool isError = false,
+    Duration duration = const Duration(seconds: 3),
+  }) {
+    Get.snackbar(
+      isError ? '❌ Error' : '✅ Éxito',
+      message,
+      backgroundColor: isError ? Colors.red[300] : const Color(0xFFF2DCD8),
+      colorText: isError ? Colors.white : const Color(0xFFD96C94),
+      snackPosition: SnackPosition.BOTTOM,
+      margin: const EdgeInsets.all(10),
+      borderRadius: 10,
+      duration: duration,
+      animationDuration: const Duration(milliseconds: 300),
+      icon: Icon(
+        isError ? Icons.error_outline : Icons.check_circle_outline,
+        color: isError ? Colors.white : const Color(0xFFD96C94),
+      ),
+      shouldIconPulse: true,
+    );
+  }
+
+  //  metodo para verificar lo logros
+  void checkForAchievements() {
+    final stats = progressStats.value;
+
+    if (stats.totalSessions >= 10) {
+      notificationService.showProgressAchievement(
+        '¡Has completado 10 sesiones! 🎊',
+      );
+    }
+    if (stats.successRate >= 0.8) {
+      notificationService.showProgressAchievement(
+        '¡Excelente tasa de éxito del 80%! ⭐',
+      );
+    }
+    if (stats.totalImagesUsed >= 50) {
+      notificationService.showProgressAchievement(
+        '¡Has utilizado 50 imágenes! ',
+      );
+    }
+  }
+
+  // ==================== USER INFO ====================
+  Future<void> _loadUserEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    _userEmail = prefs.getString('userEmail') ?? '';
+  }
+
+  void recordSuccessfulSession(List<ImageModel> images) {
+    recordSession(
+      images,
+      true,
+      "",
+    ); // La frase generada se puede agregar después
+  }
+
+  void recordFailedSession() {
+    recordSession([], false, "Error en la comunicación");
+  }
+
+  // MÉTODO PARA REGISTRAR UNA SESIÓN
+  void recordSession(
+    List<ImageModel> imagesUsed,
+    bool wasSuccessful,
+    String phraseGenerated,
+  ) {
+    final now = DateTime.now();
+
+    progressStats.update((stats) {
+      stats!.totalSessions++;
+      stats.totalImagesUsed += imagesUsed.length;
+      if (wasSuccessful) stats.successfulCommunications++;
+      stats.lastSession = now;
+
+      // Registrar en historial
+      stats.sessionHistory.insert(
+        0,
+        SessionRecord(
+          date: now,
+          imagesUsed: imagesUsed.length,
+          wasSuccessful: wasSuccessful,
+          phraseGenerated: phraseGenerated,
+        ),
+      );
+
+      // Limitar historial a 100 sesiones
+      if (stats.sessionHistory.length > 100) {
+        stats.sessionHistory = stats.sessionHistory.sublist(0, 100);
+      }
+
+      // Registrar uso de categorías e imágenes
+      for (var image in imagesUsed) {
+        final category = ImageModel.getFolderName(image.imagePath);
+        stats.categoryUsage[category] =
+            (stats.categoryUsage[category] ?? 0) + 1;
+
+        final imageName = image.nameOfImage ?? 'Sin nombre';
+        stats.mostUsedImages[imageName] =
+            (stats.mostUsedImages[imageName] ?? 0) + 1;
+      }
+    });
+
+    _saveProgressStats();
+  }
+
+  // GUARDAR ESTADÍSTICAS
+  Future<void> _saveProgressStats() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stats = progressStats.value;
+
+    await prefs.setInt('totalSessions', stats.totalSessions);
+    await prefs.setInt('totalImagesUsed', stats.totalImagesUsed);
+    await prefs.setInt(
+      'successfulCommunications',
+      stats.successfulCommunications,
+    );
+    await prefs.setString('lastSession', stats.lastSession.toIso8601String());
+    await prefs.setString('categoryUsage', jsonEncode(stats.categoryUsage));
+    await prefs.setString('mostUsedImages', jsonEncode(stats.mostUsedImages));
+    await prefs.setString(
+      'sessionHistory',
+      jsonEncode(
+        stats.sessionHistory
+            .map(
+              (e) => {
+                'date': e.date.toIso8601String(),
+                'imagesUsed': e.imagesUsed,
+                'wasSuccessful': e.wasSuccessful,
+                'phraseGenerated': e.phraseGenerated,
+              },
+            )
+            .toList(),
+      ),
+    );
+  }
+
+  // CARGAR ESTADÍSTICAS
+  Future<void> loadProgressStats() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final totalSessions = prefs.getInt('totalSessions') ?? 0;
+    final totalImagesUsed = prefs.getInt('totalImagesUsed') ?? 0;
+    final successfulCommunications =
+        prefs.getInt('successfulCommunications') ?? 0;
+    final lastSession = DateTime.parse(
+      prefs.getString('lastSession') ?? DateTime.now().toIso8601String(),
+    );
+
+    final categoryUsage = Map<String, int>.from(
+      jsonDecode(prefs.getString('categoryUsage') ?? '{}'),
+    );
+
+    final mostUsedImages = Map<String, int>.from(
+      jsonDecode(prefs.getString('mostUsedImages') ?? '{}'),
+    );
+
+    final sessionHistoryJson = jsonDecode(
+      prefs.getString('sessionHistory') ?? '[]',
+    );
+    final sessionHistory = sessionHistoryJson
+        .map<SessionRecord>(
+          (e) => SessionRecord(
+            date: DateTime.parse(e['date']),
+            imagesUsed: e['imagesUsed'],
+            wasSuccessful: e['wasSuccessful'],
+            phraseGenerated: e['phraseGenerated'],
+          ),
+        )
+        .toList();
+
+    progressStats.value = ProgressStats(
+      totalSessions: totalSessions,
+      totalImagesUsed: totalImagesUsed,
+      successfulCommunications: successfulCommunications,
+      categoryUsage: categoryUsage,
+      mostUsedImages: mostUsedImages,
+      lastSession: lastSession,
+      sessionHistory: sessionHistory,
+    );
   }
 
   Future<void> _loadAuthStatus() async {
@@ -54,93 +425,127 @@ class ControllerTeach extends GetxController {
 
   // Método para asignar un tutor a un paciente
   void assignTutorToPatient(String tutorEmail, String patientEmail) {
-    final tutor = tutors.firstWhere((tutor) => tutor.email == tutorEmail,
-        orElse: () => MockUser(name: '', email: '', password: '', role: ''));
+    final tutor = tutors.firstWhere(
+      (tutor) => tutor.email == tutorEmail,
+      orElse: () => MockUser(name: '', email: '', password: '', role: ''),
+    );
     final patient = patients.firstWhere(
-        (patient) => patient.email == patientEmail,
-        orElse: () => MockUser(name: '', email: '', password: '', role: ''));
+      (patient) => patient.email == patientEmail,
+      orElse: () => MockUser(name: '', email: '', password: '', role: ''),
+    );
 
     if (tutor.email.isEmpty || patient.email.isEmpty) {
-      Get.snackbar('Error', 'Tutor o paciente no encontrado',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Error',
+        'Tutor o paciente no encontrado',
+        snackPosition: SnackPosition.BOTTOM,
+      );
       return;
     }
 
     // Verificar si ya existe una asignación
-    final exists = assignments
-        .any((assignment) => assignment['patientEmail'] == patientEmail);
+    final exists = assignments.any(
+      (assignment) => assignment['patientEmail'] == patientEmail,
+    );
 
     if (exists) {
-      Get.snackbar('Error', 'El paciente ya tiene un tutor asignado',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Error',
+        'El paciente ya tiene un tutor asignado',
+        snackPosition: SnackPosition.BOTTOM,
+      );
       return;
     }
 
     // Guardar la asignación
     assignments.add({'tutorEmail': tutorEmail, 'patientEmail': patientEmail});
     _saveAssignmentToPreferences(tutorEmail, patientEmail);
-    Get.snackbar('Éxito', 'Tutor asignado correctamente',
-        snackPosition: SnackPosition.BOTTOM);
+    Get.snackbar(
+      'Éxito',
+      'Tutor asignado correctamente',
+      snackPosition: SnackPosition.BOTTOM,
+    );
   }
 
   // Guardar la asignación en SharedPreferences (puede usarse para pruebas locales)
   Future<void> _saveAssignmentToPreferences(
-      String tutorEmail, String patientEmail) async {
+    String tutorEmail,
+    String patientEmail,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('assignedTutor_$patientEmail', tutorEmail);
   }
 
   // Método para obtener la lista de imágenes de assets
   Future<List<String>> obtenerListaImagenes(String colorCarpeta) async {
-    List<String> archivosLocales = [];
-    List<String> archivosAssets = [];
+    List<String> archivos = [];
 
     try {
-      // 1. Directorio local de la app
-      final Directory appDocDir = await getApplicationDocumentsDirectory();
-      final String localDirPath = '${appDocDir.path}/imagenes/$colorCarpeta';
-      final Directory localDir = Directory(localDirPath);
+      if (kIsWeb) {
+        // Solo lee los assets en Web
+        final manifestContent = await rootBundle.loadString(
+          'AssetManifest.json',
+        );
+        final Map<String, dynamic> manifestMap = json.decode(manifestContent);
 
-      // 2. Verificar si hay archivos locales
-      if (await localDir.exists()) {
-        final archivos = localDir
-            .listSync(recursive: true)
-            .whereType<File>()
-            .where((file) =>
-                file.path.endsWith('.png') || file.path.endsWith('.jpg'))
+        archivos = manifestMap.keys
+            .where((path) => path.contains('assets/imagenes/$colorCarpeta/'))
             .toList();
+      } else {
+        // Código original para móviles/escritorio
+        final Directory appDocDir = await getApplicationDocumentsDirectory();
+        final String localDirPath = '${appDocDir.path}/imagenes/$colorCarpeta';
+        final Directory localDir = Directory(localDirPath);
 
-        if (archivos.isNotEmpty) {
-          archivosLocales = archivos.map((f) => f.path).toList();
-          return archivosLocales;
+        if (await localDir.exists()) {
+          final archivosLocales = localDir
+              .listSync(recursive: true)
+              .whereType<File>()
+              .where(
+                (file) =>
+                    file.path.endsWith('.png') || file.path.endsWith('.jpg'),
+              )
+              .toList();
+
+          if (archivosLocales.isNotEmpty) {
+            archivos = archivosLocales.map((f) => f.path).toList();
+            return archivos;
+          }
         }
+
+        final manifestContent = await rootBundle.loadString(
+          'AssetManifest.json',
+        );
+        final Map<String, dynamic> manifestMap = json.decode(manifestContent);
+
+        archivos = manifestMap.keys
+            .where((path) => path.contains('assets/imagenes/$colorCarpeta/'))
+            .toList();
       }
 
-      // 3. Si no hay archivos locales, usar los assets
-      final manifestContent = await rootBundle.loadString('AssetManifest.json');
-      final Map<String, dynamic> manifestMap = json.decode(manifestContent);
-
-      archivosAssets = manifestMap.keys
-          .where((path) => path.contains('assets/imagenes/$colorCarpeta/'))
-          .toList();
-
-      return archivosAssets;
+      return archivos;
     } catch (e) {
       print('Error al obtener lista de imágenes: $e');
       return [];
     }
   }
 
-// Método para copiar las imágenes desde los assets al almacenamiento local
+  // Método para copiar las imágenes desde los assets al almacenamiento local
   Future<void> copiarImagenesAssetsAlLocal() async {
+    if (kIsWeb) {
+      print("Saltando copia de imágenes en Web (no soportado)");
+      return;
+    }
+
     try {
       // Obtener directorio local de la app
       final Directory appDocDir = await getApplicationDocumentsDirectory();
       final String destinoBase = '${appDocDir.path}/imagenes';
 
       // Leer el AssetManifest.json
-      final String manifestContent =
-          await rootBundle.loadString('AssetManifest.json');
+      final String manifestContent = await rootBundle.loadString(
+        'AssetManifest.json',
+      );
       final Map<String, dynamic> manifestMap = json.decode(manifestContent);
 
       // Filtrar solo los paths que están en assets/imagenes/
@@ -154,8 +559,10 @@ class ControllerTeach extends GetxController {
         final List<int> bytes = data.buffer.asUint8List();
 
         // Obtener ruta relativa para mantener estructura de carpetas
-        final String relativePath =
-            assetPath.replaceFirst('assets/imagenes/', '');
+        final String relativePath = assetPath.replaceFirst(
+          'assets/imagenes/',
+          '',
+        );
         final String localPath = '$destinoBase/$relativePath';
 
         // Verificar si la imagen ya existe en el almacenamiento local
@@ -164,53 +571,56 @@ class ControllerTeach extends GetxController {
           continue; // Si la imagen ya existe, no hacer nada
         }
 
-        await localFile.parent
-            .create(recursive: true); // Crear carpetas si no existen
+        await localFile.parent.create(
+          recursive: true,
+        ); // Crear carpetas si no existen
         await localFile.writeAsBytes(bytes, flush: true); // Guardar imagen
 
         print(
-            'Imagen copiada a: $localPath'); // Registra que la imagen fue copiada
+          'Imagen copiada a: $localPath',
+        ); // Registra que la imagen fue copiada
       }
     } catch (e) {
       print('Error al copiar imágenes: $e');
     }
   }
 
- // Método para enviar la secuencia de pictogramas a la API Flask
-Future<String> enviarSolicitud(String sentence) async {
-  // URL de tu nueva API Flask
-  String apiUrl = 'http://72.60.25.229:5000/generate_sentence'; 
-  Map<String, String> headers = {'Content-Type': 'application/json'};
+  // Método para enviar la secuencia de pictogramas a la API Flask
+  Future<String> enviarSolicitud(String sentence) async {
+    // URL de tu nueva API Flask
+    String apiUrl = 'http://72.60.25.229:5000/generate_sentence';
+    Map<String, String> headers = {'Content-Type': 'application/json'};
 
-  // El backend espera 'sequence' con la oración sin procesar
-  String requestBody = jsonEncode({'sequence': sentence});
+    // El backend espera 'sequence' con la oración sin procesar
+    String requestBody = jsonEncode({'sequence': sentence});
 
-  try {
-    isLoading.value = true;
+    try {
+      isLoading.value = true;
 
-    var response = await http
-        .post(Uri.parse(apiUrl), headers: headers, body: requestBody)
-        .timeout(const Duration(seconds: 15));
+      var response = await http
+          .post(Uri.parse(apiUrl), headers: headers, body: requestBody)
+          .timeout(const Duration(seconds: 15));
 
-    isLoading.value = false;
+      isLoading.value = false;
 
-    if (response.statusCode == 200) {
-      Map<String, dynamic> data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        Map<String, dynamic> data = jsonDecode(response.body);
 
-      // Mostrar la oración generada por LLaMA
-      mostrarPopup(data['generated_sentence']);
-      return 'Ok';
-    } else {
-      mostrarPopup('El internet es inestable, vuelva a intentar más tarde');
+        // Mostrar la oración generada por LLaMA
+        mostrarPopup(data['generated_sentence']);
+        return 'Ok';
+      } else {
+        mostrarPopup('El internet es inestable, vuelva a intentar más tarde');
+        return 'Error';
+      }
+    } catch (error) {
+      isLoading.value = false;
+      mostrarPopup(
+        'Hubo un error inesperado, por favor vuelva a intentar más tarde',
+      );
       return 'Error';
     }
-  } catch (error) {
-    isLoading.value = false;
-    mostrarPopup('Hubo un error inesperado, por favor vuelva a intentar más tarde');
-    return 'Error';
   }
-}
-
 
   // Método para mostrar un popup con la frase generada
   void mostrarPopup(String fraseGenerada) async {
@@ -226,21 +636,25 @@ Future<String> enviarSolicitud(String sentence) async {
             Get.back();
           },
           child: const Icon(Icons.arrow_forward_rounded),
-        )
+        ),
       ],
     );
   }
 
   // Método para leer en voz la frase generada
+  //Future<void> tellPhrase(String text) async {
+  // await flutterTts.setLanguage('es-ES');
+  // await flutterTts.setSpeechRate(0.6);
+  // await flutterTts.speak(text);
+  //}
+
   Future<void> tellPhrase(String text) async {
-    await flutterTts.setLanguage('es-ES');
-    await flutterTts.setSpeechRate(0.6);
-    await flutterTts.speak(text);
+    await soundController.speak(text);
   }
 
   // Método para detener la reproducción de texto
   Future<void> stopPhrase() async {
-    await flutterTts.stop();
+    await soundController.stop();
   }
 
   // Método para insertar un código
@@ -394,11 +808,11 @@ Future<String> enviarSolicitud(String sentence) async {
       tasks.addAll([
         {
           'task_name': 'Tarea 1',
-          'task_description': 'Descripción de la tarea 1'
+          'task_description': 'Descripción de la tarea 1',
         },
         {
           'task_name': 'Tarea 2',
-          'task_description': 'Descripción de la tarea 2'
+          'task_description': 'Descripción de la tarea 2',
         },
       ]);
     }
@@ -414,12 +828,14 @@ Future<String> enviarSolicitud(String sentence) async {
         Get.off(() => const PrincipalViewTutor()); // Navega a la vista de Admin
         break;
       case 'Terapeuta':
-        Get.off(() =>
-            const PrincipalViewTerapeuta()); // Navega a la vista de Terapeuta
+        Get.off(
+          () => const PrincipalViewTerapeuta(),
+        ); // Navega a la vista de Terapeuta
         break;
       case 'Paciente':
-        Get.off(() =>
-            const PrincipalViewPaciente()); // Navega a la vista de Paciente
+        Get.off(
+          () => const PrincipalViewPaciente(),
+        ); // Navega a la vista de Paciente
         break;
       default:
         Get.snackbar(
@@ -461,17 +877,16 @@ Future<String> enviarSolicitud(String sentence) async {
   void sendMessage(String text, String sender) {
     if (text.isNotEmpty) {
       messages.add(
-        Message(
-          text: text,
-          sender: sender,
-          timestamp: DateTime.now(),
-        ),
+        Message(text: text, sender: sender, timestamp: DateTime.now()),
       );
     }
   }
 
   void uploadTherapistInformation(
-      String name, String specialization, String bio) {
+    String name,
+    String specialization,
+    String bio,
+  ) {
     // Ejemplo básico:
     print('Nombre: $name');
     print('Especialización: $specialization');
@@ -487,7 +902,8 @@ Future<String> enviarSolicitud(String sentence) async {
     // Asegúrate de cambiar 'your-server-url' a la URL de tu servidor real
     final response = await http.post(
       Uri.parse(
-          'http://72.60.25.229:8080/get-patient-qr'), // Cambia esta URL por la de tu servidor
+        'http://72.60.25.229:8080/get-patient-qr',
+      ), // Cambia esta URL por la de tu servidor
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'uuid': patientUuid}),
     );
