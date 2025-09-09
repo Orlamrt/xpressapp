@@ -28,22 +28,17 @@ class BottomNavigationBarComponentTutor extends StatelessWidget {
           label: 'Profile',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.book_outlined),
-          label: 'Tareas',
+          icon: Icon(Icons.calendar_month_outlined),
+          label: 'Citas',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_month_outlined),
-          label: 'Citas'
-          )
-          ,BottomNavigationBarItem(
-            icon: Icon(Icons.person_add_alt_1_outlined),
-            label: 'Asignar'),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.screen_search_desktop_outlined),
-              label: 'Terapeutas' ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.message_outlined),
-                label: 'Chats')
+          icon: Icon(Icons.screen_search_desktop_outlined),
+          label: 'Terapeutas',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.message_outlined),
+          label: 'Chats',
+        ),
       ],
       currentIndex: currentIndex, // Establece el ítem seleccionado
       selectedItemColor: const Color(0xfff555b7a6), // Color para el ítem seleccionado

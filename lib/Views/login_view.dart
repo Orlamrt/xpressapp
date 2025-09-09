@@ -35,7 +35,7 @@ class LoginView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ... (imports y código anterior se mantienen igual)
+      
 
               TextFormField(
                 controller: emailController,

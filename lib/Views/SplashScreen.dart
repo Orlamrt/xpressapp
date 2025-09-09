@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xpresatecch/Views/principal_view_Paciente.dart';
+import 'package:xpresatecch/Views/principal_viewTutor.dart';
+import 'package:xpresatecch/Views/principal_viewTerapeuta.dart';
+import 'package:xpresatecch/Views/star_session.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -37,11 +41,36 @@ class _SplashScreenState extends State<SplashScreen>
 await _c.reverse();
 
       if (!mounted) return;
-      Get.off(
-  () => const PrincipalViewPaciente(),
-  transition: Transition.fadeIn,
-  duration: const Duration(milliseconds: 320),
-);
+      final prefs = await SharedPreferences.getInstance();
+      final isAuthenticated = prefs.getBool('isAuthenticated') ?? false;
+      if (!mounted) return;
+
+      if (isAuthenticated) {
+        final role = prefs.getString('userRole');
+        Widget destination;
+        switch (role) {
+          case 'Tutor':
+            destination = const PrincipalViewTutor();
+            break;
+          case 'Terapeuta':
+            destination = const PrincipalViewTerapeuta();
+            break;
+          case 'Paciente':
+          default:
+            destination = const PrincipalViewPaciente();
+        }
+        Get.off(
+          () => destination,
+          transition: Transition.fadeIn,
+          duration: const Duration(milliseconds: 320),
+        );
+      } else {
+        Get.off(
+          () => const PrincipalInicio(),
+          transition: Transition.fadeIn,
+          duration: const Duration(milliseconds: 320),
+        );
+      }
 
     });
   }

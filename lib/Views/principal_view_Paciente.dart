@@ -58,10 +58,28 @@ class _PrincipalViewState extends State<PrincipalViewPaciente> {
         controller: pageController,
         onPageChanged: (index) => setState(() => _currentIndex = index),
         children: [
-          const TecchView()
+          const TecchView(),
+          // Perfil con datos cargados de SharedPreferences
+          _isAuthenticated
+              ? ProfileView(
+                  name: _userData['userName'] ?? 'No disponible',
+                  email: _userData['userEmail'] ?? 'No disponible',
+                  role: _userData['userRole'] ?? 'No disponible',
+                )
+              : const ProfileView(name: "No disponible", email:"No disponible" , role:"No disponible"),
+          // Vista para gestionar/agregar imágenes locales
+          ImageUploadView(),
         ],
       ),
-      
+      bottomNavigationBar: BottomNavigationBarComponent(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+            pageController.jumpToPage(index);
+          });
+        },
+      ),
     );
   }
 }

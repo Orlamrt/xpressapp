@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xpresatecch/Views/login_view.dart';
 import 'package:xpresatecch/Views/register_view.dart';
 import 'package:xpresatecch/Views/principal_view_Paciente.dart';
+import 'package:xpresatecch/Views/principal_viewTutor.dart';
+import 'package:xpresatecch/Views/principal_viewTerapeuta.dart';
 
 class PrincipalInicio extends StatefulWidget {
   const PrincipalInicio({key});
@@ -24,10 +26,22 @@ class _PrincipalInicioState extends State<PrincipalInicio> {
 
     if (isAuthenticated) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        final role = prefs.getString('userRole');
+        Widget destination;
+        switch (role) {
+          case 'Tutor':
+            destination = const PrincipalViewTutor();
+            break;
+          case 'Terapeuta':
+            destination = const PrincipalViewTerapeuta();
+            break;
+          case 'Paciente':
+          default:
+            destination = const PrincipalViewPaciente();
+        }
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-              builder: (context) => const PrincipalViewPaciente()),
+          MaterialPageRoute(builder: (context) => destination),
         );
       });
     }

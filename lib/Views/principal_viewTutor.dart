@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:xpresatecch/Views/Tareas_view.dart';
 import 'package:xpresatecch/Views/allchatView.dart';
-import 'package:xpresatecch/Views/assign_view.dart';
 import 'package:xpresatecch/Views/calendar_view.dart';
 import 'package:xpresatecch/Views/register_view.dart';
 import 'package:xpresatecch/Views/profile_view.dart';
@@ -68,20 +66,17 @@ class _PrincipalViewTutorState extends State<PrincipalViewTutor> {
                           name: data['userName'] ?? 'Nombre no disponible',
                           email: data['userEmail'] ?? 'Email no disponible',
                           role: data['userRole'] ?? 'Rol no disponible',
-                          assignedPatientName: assignedPatientName
-                              .value, // Pasa el nombre del paciente asignado
+                          assignedPatientName: assignedPatientName.value,
                         );
                       }
                     },
                   )
                 : const RegisterView(),
-            const CodeVer(),
             controller.isAuthenticated.value
                 ? const CalendarView()
                 : const PrincipalInicio(),
-            AssignView(),
             TherapistsView(),
-            AllChatsView()
+            AllChatsView(),
           ],
         );
       }),

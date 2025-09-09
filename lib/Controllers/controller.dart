@@ -337,14 +337,29 @@ Future<String> enviarSolicitud(String sentence) async {
         final Map<String, dynamic> data = jsonDecode(response.body);
 
         isAuthenticated.value = true;
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('userName', data['nombre']);
-        await prefs.setString('userEmail', email);
-        await prefs.setString('userRole', data['rol']);
+        // Persistir estado de autenticación también en SharedPreferences
+        await _saveAuthStatus(true);
 
-        // Solo guardar el UUID si el rol es 'Paciente'
-        if (data['rol'] == 'Paciente') {
-          await prefs.setString('patient_uuid', data['uuid']);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('userName', (data['nombre'] ?? '').toString());
+        await prefs.setString('userEmail', email);
+        await prefs.setString('userRole', (data['rol'] ?? '').toString());
+
+        // Solo guardar el UUID si el rol es 'Paciente'.
+        // Intentamos con varias posibles claves que podría devolver el backend.
+        if ((data['rol'] ?? '') == 'Paciente') {
+          final dynamic possibleUuid =
+              data['uuid'] ?? data['patient_uuid'] ?? data['patientUuid'] ?? data['uuidPaciente'] ?? data['uuid_paciente'];
+
+          if (possibleUuid != null && possibleUuid.toString().isNotEmpty) {
+            await prefs.setString('patient_uuid', possibleUuid.toString());
+            // Log para diagnóstico en caso de dudas
+            // ignore: avoid_print
+            print('patient_uuid guardado: ' + possibleUuid.toString());
+          } else {
+            // ignore: avoid_print
+            print('Advertencia: No se recibió UUID en la respuesta para Paciente.');
+          }
         }
 
         await navigateByRole();
@@ -395,6 +410,66 @@ Future<String> enviarSolicitud(String sentence) async {
 
   void addTask(String name, String description) {
     tasks.add({'task_name': name, 'task_description': description});
+  }
+
+  // Registro de usuario en JSON con manejo de errores
+  Future<bool> registerUserV2(
+    String nombre,
+    String email,
+    String password,
+    String rol, {
+    String? license,
+    required String fechaNacimiento,
+  }) async {
+    final Map<String, dynamic> body = {
+      'nombre': nombre,
+      'email': email,
+      'password': password,
+      'rol': rol,
+      'fecha_nacimiento': fechaNacimiento,
+    };
+
+    if (rol == 'Terapeuta' && license != null && license.isNotEmpty) {
+      body['cedula'] = license;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://72.60.25.229:8080/register'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        if (responseData['status'] == 'success') {
+          return true;
+        } else {
+          Get.snackbar(
+            'Error',
+            responseData['message']?.toString() ?? 'Error en el registro',
+            snackPosition: SnackPosition.BOTTOM,
+          );
+          return false;
+        }
+      } else {
+        Get.snackbar(
+          'Error',
+          'Fallo en la solicitud (' + response.statusCode.toString() + ')',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return false;
+      }
+    } catch (error) {
+      Get.snackbar(
+        'Error',
+        'Error al registrar usuario: ' + error.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return false;
+    }
   }
 
   // Método para obtener tareas (Evita duplicación)

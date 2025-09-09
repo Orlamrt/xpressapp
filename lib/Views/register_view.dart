@@ -21,7 +21,6 @@ class _RegisterViewState extends State<RegisterView> {
   String? selectedRole;
   bool isTherapist = false;
 
-  // ... (imports y código anterior se mantienen igual)
 
   @override
   Widget build(BuildContext context) {
@@ -303,7 +302,7 @@ class _RegisterViewState extends State<RegisterView> {
                               'Por favor, ingrese su cédula profesional');
                           return;
                         }
-                        await controller.registerUser(
+                        await controller.registerUserV2(
                           nombre,
                           email,
                           password,
@@ -312,7 +311,7 @@ class _RegisterViewState extends State<RegisterView> {
                           license: license,
                         );
                       } else {
-                        await controller.registerUser(
+                        await controller.registerUserV2(
                           nombre,
                           email,
                           password,
@@ -350,7 +349,7 @@ class _RegisterViewState extends State<RegisterView> {
     );
   }
 
-// ... (resto del código se mantiene igual)
+
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
