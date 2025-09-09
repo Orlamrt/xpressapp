@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:xpresatecch/Views/alert_images_component.dart';
 import 'package:xpresatecch/Components/card_text_or_image_component.dart';
-import 'package:xpresatecch/Constants/Colors.dart';
+import 'package:xpresatecch/Constants/colors.dart';
 import 'package:xpresatecch/Constants/strings.dart';
 import 'package:xpresatecch/Controllers/controller.dart';
 
@@ -21,7 +21,7 @@ class MosaicoComponent extends StatelessWidget {
     final controller = Get.find<ControllerTeach>();
     final title = Textos.preguntas[index];
 
-    await controller.tellPhrase(title);
+    await controller.tellPhrase11labs(title);
 
     final imagenes =
         await controller.obtenerListaImagenes(Textos.colores[index]);

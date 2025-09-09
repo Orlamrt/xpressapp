@@ -16,6 +16,9 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
+import 'package:audioplayers/audioplayers.dart';
+
+
 class ControllerTeach extends GetxController {
   var imagenes = <ImageModel>[].obs;
   final flutterTts = FlutterTts();
@@ -32,11 +35,82 @@ class ControllerTeach extends GetxController {
   var tutors = <MockUser>[].obs;
   var assignments = <Map<String, String>>[].obs; // Lista de asignaciones
   var qrImageUrl = ''.obs;
+
+
+
+
+
+// VOICE MODEL
+
+  //Eleven labs api key and voice id
+  final String elevenLabsApiKey = 'sk_da13252af0c57eb5b6e41f4cbf4e2058c5b71c8b9078e034';
+  final String isamarVoiceId = 'JYyJjNPfmNJdaby8LdZs';
+  final String emmanuelVoiceId = 'qvN99qHpu3uqmqBD6pEt';
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  var selectedAssistant = 'isamar'.obs;
+
+
+
+
+
   @override
   void onInit() {
     super.onInit();
     _loadAuthStatus();
   }
+
+
+
+
+
+  Future<String?> tellPhrase11labs(String text) async {
+   var voiceId = (selectedAssistant=='isamar')? isamarVoiceId:emmanuelVoiceId;
+    final String url = 'https://api.elevenlabs.io/v1/text-to-speech/$voiceId?output_format=mp3_44100_96';
+    final Map<String, String> headers = {
+      'Accept': 'audio/mpeg',
+      'Content-Type': 'application/json',
+      'xi-api-key': elevenLabsApiKey,
+    };
+    final Map<String, String> body = {
+      'text': text,
+      'model_id': 'eleven_multilingual_v2',
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        final directory = await getTemporaryDirectory();
+        final filePath = '${directory.path}/audio.mp3';
+        final file = File(filePath);
+
+        await file.writeAsBytes(response.bodyBytes);
+
+        // Reproduce el audio la primera vez
+        await _audioPlayer.play(DeviceFileSource(filePath));
+
+        print('Audio reproducido y guardado en: $filePath');
+
+        // MODIFICADO: Devuelve la ruta del archivo si todo fue exitoso.
+        return filePath;
+      } else {
+        print('Error: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        // MODIFICADO: Devuelve null si hubo un error.
+        return null;
+      }
+    } catch (e) {
+      print('Ocurrió un error: $e');
+      // MODIFICADO: Devuelve null si hubo una excepción.
+      return null;
+    }
+  }
+
+
 
   Future<void> _loadAuthStatus() async {
     final prefs = await SharedPreferences.getInstance();
@@ -221,7 +295,7 @@ Future<String> enviarSolicitud(String sentence) async {
 
   // Método para mostrar un popup con la frase generada
   void mostrarPopup(String fraseGenerada) async {
-    await tellPhrase(fraseGenerada);
+    await tellPhrase11labs(fraseGenerada);
 
     Get.defaultDialog(
       title: 'Frase generada',

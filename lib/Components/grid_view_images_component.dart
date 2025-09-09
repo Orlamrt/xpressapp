@@ -36,7 +36,8 @@ class _GridViewImagesComponentState extends State<GridViewImagesComponent> {
 
   Future<void> agregarLista(ImageModel imagen, BuildContext context) async {
     final controller = Get.find<ControllerTeach>();
-    await controller.tellPhrase(imagen.nameOfImage!);
+
+    await controller.tellPhrase11labs(imagen.nameOfImage!);
     if (!context.mounted) return;
 
     controller.imagenes.add(

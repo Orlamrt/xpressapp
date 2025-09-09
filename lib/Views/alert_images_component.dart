@@ -60,7 +60,7 @@ class _AlertImagesComponentState extends State<AlertImagesComponent> {
   Future<void> onTap(int index) async {
     final controller = Get.find<ControllerTeach>();
     final portada = portadaImagenes[index];
-    await controller.tellPhrase(portada.nameOfImage!);
+    await controller.tellPhrase11labs(portada.nameOfImage!);
     final model = agregarLista(portada);
     setState(() {
       modeloImagenes = model;
