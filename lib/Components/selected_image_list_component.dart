@@ -53,7 +53,7 @@ class _SelectedImageListComponentState extends State<SelectedImageListComponent>
                         isImage: true,
                         nameImage: true,
                         onTap: () async {
-                          await controller.tellPhrase(imageModel.nameOfImage!);
+                          await controller.tellPhrase11labs(imageModel.nameOfImage!);
                         },
                       ),
                     ),

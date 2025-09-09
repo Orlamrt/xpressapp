@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:xpresatecch/Components/mosaico_component.dart';
 import 'package:xpresatecch/Components/selected_image_list_component.dart';
-import 'package:xpresatecch/Constants/Colors.dart';
+import 'package:xpresatecch/Constants/colors.dart';
 import 'package:xpresatecch/Controllers/controller.dart';
+import 'package:xpresatecch/Controllers/mp3_controller.dart';
 import 'package:xpresatecch/Models/image_model.dart';
 
 class TecchView extends StatefulWidget {
@@ -27,6 +28,18 @@ class _TecchView extends State<TecchView> {
       },
       child: Obx(
         () => Scaffold(
+                floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                builder: (BuildContext context) {
+                  return _buildModalContent(context);
+                },
+              );
+            },
+            backgroundColor: Colors.white,
+            child: const Icon(Icons.interpreter_mode),
+          ),
           backgroundColor: const Color(0xFFF2DCD8),
           appBar: AppBar(
             title: const Text('Teacch'),
@@ -98,4 +111,60 @@ class _TecchView extends State<TecchView> {
       ),
     );
   }
+
+    Widget _buildModalContent(BuildContext context) {
+       final audioController = Get.find<AudioController>();
+    return Container(
+      height: 200,
+      padding: const EdgeInsets.all(16.0),
+      child: Obx(
+            () => Column(
+          children: [
+            const Text(
+              'Escoge a tu asistentte',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            RadioListTile(
+              title: const Text('Isamar'),
+              value: 'isamar',
+              groupValue: controller.selectedAssistant.value,
+              onChanged: (value) {
+                
+                controller.selectedAssistant.value = value.toString();
+                    audioController.playAudio(
+                    subDirectory: 'audio',
+                    fileName: 'isamarAssistantGreetings.mp3'
+                  );
+                print(value.toString()); // <-- Move this line before Navigator.pop
+                Navigator.pop(context);
+
+              },
+            ),
+            RadioListTile(
+
+              title: const Text('Emmanuel'),
+              value: 'emmanuel',
+
+              groupValue: controller.selectedAssistant.value,
+
+              onChanged: (value) {
+                controller.selectedAssistant.value = value.toString();
+            audioController.playAudio(
+                    subDirectory: 'audio',
+                    fileName: 'emmanuelAssistantGreetings.mp3'
+                  );
+                print(value.toString()); // <-- Move this line before Navigator.pop
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  
 }
