@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as path;
 import 'package:xpresatecch/Models/image_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xpresatecch/Views/principal_view_Paciente.dart';
@@ -45,6 +46,7 @@ class ControllerTeach extends GetxController {
   //Eleven labs api key and voice id
   final String elevenLabsApiKey = 'sk_da13252af0c57eb5b6e41f4cbf4e2058c5b71c8b9078e034';
   final String isamarVoiceId = 'JYyJjNPfmNJdaby8LdZs';
+
   final String emmanuelVoiceId = 'qvN99qHpu3uqmqBD6pEt';
   final AudioPlayer _audioPlayer = AudioPlayer();
   var selectedAssistant = 'isamar'.obs;
@@ -61,18 +63,67 @@ class ControllerTeach extends GetxController {
 
 
 
+  String _sanitizeTextForFilename(String text) {
+    String lowercased = text.toLowerCase();
+
+    // Manual replacement for common Spanish diacritics
+    String withoutDiacritics = lowercased
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ñ', 'n')
+        .replaceAll('ü', 'u');
+
+    // Remove all non-alphanumeric characters using a regular expression
+    RegExp invalidChars = RegExp(r'[^a-z0-9]');
+    String sanitized = withoutDiacritics.replaceAll(invalidChars, '');
+
+    return sanitized;
+  }
+
+  /// Constructs the full local file path for a given text and assistant.
+  ///
+  /// Path structure: <app_docs>/audio/<assistant_name>/<sanitized_text>.mp3
+  Future<String> _getAudioFilePath(String text, String assistantName) async {
+    final sanitizedName = _sanitizeTextForFilename(text);
+    final directory = await getApplicationDocumentsDirectory();
+    // Use path.join for a platform-safe way to build the path
+    return path.join(directory.path, 'audio', assistantName, '$sanitizedName.mp3');
+  }
 
 
+  /// Fetches and plays a phrase from ElevenLabs, with local caching.
+  ///
+  /// Checks for a local copy first. If not found, calls the API,
+  /// saves the audio to the cache, and then plays it.
   Future<String?> tellPhrase11labs(String text) async {
-   var voiceId = (selectedAssistant=='isamar')? isamarVoiceId:emmanuelVoiceId;
+    print("Requesting phrase: $text");
+
+    // 1. Determine the full path where the audio file should be cached.
+    final String filePath = await _getAudioFilePath(text, selectedAssistant.value);
+    final File audioFile = File(filePath);
+
+    // 2. Check if the file already exists in the cache.
+    if (await audioFile.exists()) {
+      print('Cache hit for "$text". Playing from local storage.');
+      // Play directly from the local file
+      await _audioPlayer.play(DeviceFileSource(filePath));
+      return filePath;
+    }
+
+    // 3. Cache miss: Call the API to generate the audio.
+    print('Cache miss for "$text". Calling ElevenLabs API...');
+    var voiceId = (selectedAssistant == 'isamar') ? isamarVoiceId : emmanuelVoiceId;
     final String url = 'https://api.elevenlabs.io/v1/text-to-speech/$voiceId?output_format=mp3_44100_96';
     final Map<String, String> headers = {
       'Accept': 'audio/mpeg',
       'Content-Type': 'application/json',
       'xi-api-key': elevenLabsApiKey,
     };
-    final Map<String, String> body = {
-      'text': text,
+    final Map<String, dynamic> body = {
+      'text': text, // Use the ORIGINAL text for the API call
       'model_id': 'eleven_multilingual_v2',
     };
 
@@ -84,31 +135,75 @@ class ControllerTeach extends GetxController {
       );
 
       if (response.statusCode == 200) {
-        final directory = await getTemporaryDirectory();
-        final filePath = '${directory.path}/audio.mp3';
-        final file = File(filePath);
+        // 4. Save the new audio file to the cache.
+        // Ensure the directory exists before writing the file.
+        await audioFile.parent.create(recursive: true);
+        await audioFile.writeAsBytes(response.bodyBytes);
 
-        await file.writeAsBytes(response.bodyBytes);
-
-        // Reproduce el audio la primera vez
+        // 5. Play the newly downloaded audio.
         await _audioPlayer.play(DeviceFileSource(filePath));
-
-        print('Audio reproducido y guardado en: $filePath');
-
-        // MODIFICADO: Devuelve la ruta del archivo si todo fue exitoso.
+        print('Audio saved and played from: $filePath');
         return filePath;
       } else {
-        print('Error: ${response.statusCode}');
+        print('Error fetching audio from API: ${response.statusCode}');
         print('Response body: ${response.body}');
-        // MODIFICADO: Devuelve null si hubo un error.
         return null;
       }
     } catch (e) {
-      print('Ocurrió un error: $e');
-      // MODIFICADO: Devuelve null si hubo una excepción.
+      print('An exception occurred during API call: $e');
       return null;
     }
   }
+
+
+
+  // Future<String?> tellPhrase11labs(String text) async {
+  //   print(text);
+  //  var voiceId = (selectedAssistant=='isamar')? isamarVoiceId:emmanuelVoiceId;
+  //   final String url = 'https://api.elevenlabs.io/v1/text-to-speech/$voiceId?output_format=mp3_44100_96';
+  //   final Map<String, String> headers = {
+  //     'Accept': 'audio/mpeg',
+  //     'Content-Type': 'application/json',
+  //     'xi-api-key': elevenLabsApiKey,
+  //   };
+  //   final Map<String, String> body = {
+  //     'text': text,
+  //     'model_id': 'eleven_multilingual_v2',
+  //   };
+  //
+  //   try {
+  //     final response = await http.post(
+  //       Uri.parse(url),
+  //       headers: headers,
+  //       body: jsonEncode(body),
+  //     );
+  //
+  //     if (response.statusCode == 200) {
+  //       final directory = await getTemporaryDirectory();
+  //       final filePath = '${directory.path}/audio.mp3';
+  //       final file = File(filePath);
+  //
+  //       await file.writeAsBytes(response.bodyBytes);
+  //
+  //       // Reproduce el audio la primera vez
+  //       await _audioPlayer.play(DeviceFileSource(filePath));
+  //
+  //       print('Audio reproducido y guardado en: $filePath');
+  //
+  //       // MODIFICADO: Devuelve la ruta del archivo si todo fue exitoso.
+  //       return filePath;
+  //     } else {
+  //       print('Error: ${response.statusCode}');
+  //       print('Response body: ${response.body}');
+  //       // MODIFICADO: Devuelve null si hubo un error.
+  //       return null;
+  //     }
+  //   } catch (e) {
+  //     print('Ocurrió un error: $e');
+  //     // MODIFICADO: Devuelve null si hubo una excepción.
+  //     return null;
+  //   }
+  // }
 
 
 
