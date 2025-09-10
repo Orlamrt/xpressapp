@@ -6,6 +6,7 @@ import 'package:xpresatecch/Constants/colors.dart';
 import 'package:xpresatecch/Controllers/controller.dart';
 import 'package:xpresatecch/Controllers/mp3_controller.dart';
 import 'package:xpresatecch/Models/image_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TecchView extends StatefulWidget {
   const TecchView({super.key});
@@ -64,17 +65,34 @@ class _TecchView extends State<TecchView> {
                     child: IconButton(
                       icon: const Icon(Icons.send),
                       onPressed: () async {
+                        // Obtener el rol del usuario desde SharedPreferences
+                        final prefs = await SharedPreferences.getInstance();
+                        final userRole = prefs.getString('userRole');
+
                         List<String> partesCadena = [];
                         String cadena = '';
+                        
                         for (ImageModel imagen in controller.imagenes) {
                           partesCadena.add(imagen.nameOfImage!.toLowerCase());
                         }
+                        
                         cadena = partesCadena.join(' ');
                         cadena = ImageModel.capitalize(cadena);
                         String data = await controller.enviarSolicitud(cadena);
-                        if (data != 'Error') {
-                          controller.imagenes.clear();
+
+                        // Solo registrar la sesión si el usuario es un paciente
+                        if (userRole == 'Paciente') {
+                          if (data != 'Error') {
+                            // REGISTRAR SESIÓN EXITOSA
+                            controller.recordSession(controller.imagenes, true, cadena);
+                          } else {
+                            // REGISTRAR SESIÓN FALLIDA
+                            controller.recordSession(controller.imagenes, false, cadena);
+                          }
                         }
+
+                        // Limpiar imágenes después de procesar
+                        controller.imagenes.clear();
                       },
                     ),
                   ),

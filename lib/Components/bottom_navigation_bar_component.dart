@@ -1,79 +1,97 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BottomNavigationBarComponent extends StatelessWidget {
-  final void Function(int) onTap;
   final int currentIndex;
+  final Function(int) onTap;
 
   const BottomNavigationBarComponent({
-    super.key,
-    required this.onTap,
+    Key? key,
     required this.currentIndex,
-  });
+    required this.onTap,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 2,
-            blurRadius: 10,
-            offset: const Offset(0, -3),
+    return FutureBuilder<SharedPreferences>(
+      future: SharedPreferences.getInstance(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+
+        final userRole = snapshot.data?.getString('userRole');
+        final items = <BottomNavigationBarItem>[
+          _buildNavItem(
+            icon: Icons.home_outlined,
+            activeIcon: Icons.home,
+            label: 'Home',
           ),
-        ],
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-        child: BottomNavigationBar(
-          elevation: 15,
-          backgroundColor: const Color(0xFFF2DCD8),
-          type: BottomNavigationBarType.fixed,
-          showSelectedLabels: true,
-          showUnselectedLabels: true,
-          items: [
+          // Solo mostrar estadísticas para pacientes
+          if (userRole == 'Paciente')
             _buildNavItem(
-              icon: Icons.home_outlined,
-              activeIcon: Icons.home,
-              label: 'Home',
+              icon: Icons.bar_chart_outlined,
+              activeIcon: Icons.bar_chart,
+              label: 'Estadísticas',
             ),
-            _buildNavItem(
-              icon: Icons.person_2_outlined,
-              activeIcon: Icons.person_2,
-              label: 'Perfil',
-            ),
-            _buildNavItem(
-              icon: Icons.upload_file_outlined,
-              activeIcon: Icons.upload,
-              label: 'Subir',
-            ),
-          ],
-          currentIndex: currentIndex,
-          selectedItemColor: const Color(0xDDD96C94),
-          unselectedItemColor: const Color(0xDDD96C94).withOpacity(0.5),
-          selectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
-            fontFamily: 'Roboto',
+          _buildNavItem(
+            icon: Icons.person_2_outlined,
+            activeIcon: Icons.person_2,
+            label: 'Perfil',
           ),
-          unselectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: 12,
-            fontFamily: 'Roboto',
+          _buildNavItem(
+            icon: Icons.upload_file_outlined,
+            activeIcon: Icons.upload,
+            label: 'Subir',
           ),
-          iconSize: 28,
-          selectedFontSize: 12,
-          unselectedFontSize: 12,
-          onTap: onTap,
-        ),
-      ),
+        ];
+
+        return Container(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.2),
+                spreadRadius: 2,
+                blurRadius: 10,
+                offset: const Offset(0, -3),
+              ),
+            ],
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+            child: BottomNavigationBar(
+              elevation: 15,
+              backgroundColor: const Color(0xFFF2DCD8),
+              type: BottomNavigationBarType.fixed,
+              showSelectedLabels: true,
+              showUnselectedLabels: true,
+              items: items,
+              currentIndex: currentIndex,
+              selectedItemColor: const Color(0xDDD96C94),
+              unselectedItemColor: const Color(0xDDD96C94).withOpacity(0.5),
+              selectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                fontFamily: 'Roboto',
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
+                fontFamily: 'Roboto',
+              ),
+              iconSize: 28,
+              selectedFontSize: 12,
+              unselectedFontSize: 12,
+              onTap: onTap,
+            ),
+          ),
+        );
+      },
     );
   }
 
