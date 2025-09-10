@@ -24,7 +24,7 @@ class ControllerTeach extends GetxController {
   var imagenes = <ImageModel>[].obs;
   final flutterTts = FlutterTts();
   var isLoading = false.obs;
-  var isAuthenticated = false.obs;
+  var isAuthenticated = true.obs;
   var userNameController = ''.obs;
   var idUserController = ''.obs;
   var birthDateController =
@@ -37,11 +37,21 @@ class ControllerTeach extends GetxController {
   var assignments = <Map<String, String>>[].obs; // Lista de asignaciones
   var qrImageUrl = ''.obs;
 
+
+
+
+
+
 // VOICE MODEL
+
+
+
+
+
 
   //Eleven labs api key and voice id
   final String elevenLabsApiKey =
-      'sk_da13252af0c57eb5b6e41f4cbf4e2058c5b71c8b9078e034';
+      'sk_f39a3693e91d829c5bd72c555a75cab21dd698fc8dd7596c';
   final String isamarVoiceId = 'JYyJjNPfmNJdaby8LdZs';
 
   final String emmanuelVoiceId = 'qvN99qHpu3uqmqBD6pEt';
@@ -100,12 +110,25 @@ class ControllerTeach extends GetxController {
 
 
 
-
   Future<String?> tellPhrase11labs(String text) async {
-    var voiceId =
-        (selectedAssistant == 'isamar') ? isamarVoiceId : emmanuelVoiceId;
-    final String url =
-        'https://api.elevenlabs.io/v1/text-to-speech/$voiceId?output_format=mp3_44100_96';
+    print("Requesting phrase: $text");
+
+    // 1. Determine the full path where the audio file should be cached.
+    final String filePath = await _getAudioFilePath(text, selectedAssistant.value);
+    final File audioFile = File(filePath);
+
+    // 2. Check if the file already exists in the cache.
+    if (await audioFile.exists()) {
+      print('Cache hit for "$text". Playing from local storage.');
+      // Play directly from the local file
+      await _audioPlayer.play(DeviceFileSource(filePath));
+      return filePath;
+    }
+
+    // 3. Cache miss: Call the API to generate the audio.
+    print('Cache miss for "$text". Calling ElevenLabs API...');
+    var voiceId = (selectedAssistant.value == 'isamar') ? isamarVoiceId : emmanuelVoiceId;
+    final String url = 'https://api.elevenlabs.io/v1/text-to-speech/$voiceId?output_format=mp3_44100_96';
 
     final Map<String, String> headers = {
       'Accept': 'audio/mpeg',
@@ -328,15 +351,35 @@ class ControllerTeach extends GetxController {
   }
 
   // Método para mostrar un popup con la frase generada
+  // MODIFICADO: Ahora la función principal maneja la lógica de la UI.
   void mostrarPopup(String fraseGenerada) async {
-    await tellPhrase11labs(fraseGenerada);
+    // 1. Llama a la API para generar y guardar el audio. La función ahora devuelve la ruta del archivo.
+    final String? audioPath = await tellPhrase11labs(fraseGenerada);
 
+    // 2. Verifica si se obtuvo una ruta de archivo válida.
+    if (audioPath == null) {
+      // Manejar el error, por ejemplo, mostrando un SnackBar.
+      Get.snackbar('Error', 'No se pudo generar el audio.');
+      return;
+    }
+
+    // 3. Muestra el popup con los botones de acción.
     Get.defaultDialog(
       title: 'Frase generada',
       content: Text(fraseGenerada),
+      // barrierDismissible: false, // Opcional: para evitar que se cierre al tocar fuera
       actions: <Widget>[
+        // NUEVO: Botón para repetir el audio.
+        TextButton(
+          onPressed: () async {
+            // Usa la ruta guardada para reproducir el audio de nuevo, sin llamar a la API.
+            await _audioPlayer.play(DeviceFileSource(audioPath));
+          },
+          child: const Icon(Icons.replay_rounded), // Icono de repetir
+        ),
         ElevatedButton(
           onPressed: () async {
+            // Detiene el audio antes de cerrar el popup.
             await stopPhrase();
             Get.back();
           },
@@ -345,7 +388,6 @@ class ControllerTeach extends GetxController {
       ],
     );
   }
-
   // Método para leer en voz la frase generada
   Future<void> tellPhrase(String text) async {
     await flutterTts.setLanguage('es-ES');
