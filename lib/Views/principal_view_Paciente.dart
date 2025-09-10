@@ -6,6 +6,7 @@ import 'package:xpresatecch/Views/profile_view.dart';
 import 'package:xpresatecch/Views/Tecch_View.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xpresatecch/Views/star_session.dart';
+import 'package:xpresatecch/Views/progress_stats_view.dart';
 
 class PrincipalViewPaciente extends StatefulWidget {
   const PrincipalViewPaciente({super.key});
@@ -59,15 +60,12 @@ class _PrincipalViewState extends State<PrincipalViewPaciente> {
         onPageChanged: (index) => setState(() => _currentIndex = index),
         children: [
           const TecchView(),
-          // Perfil con datos cargados de SharedPreferences
-          _isAuthenticated
-              ? ProfileView(
-                  name: _userData['userName'] ?? 'No disponible',
-                  email: _userData['userEmail'] ?? 'No disponible',
-                  role: _userData['userRole'] ?? 'No disponible',
-                )
-              : const ProfileView(name: "No disponible", email:"No disponible" , role:"No disponible"),
-          // Vista para gestionar/agregar imágenes locales
+          if (_userData['userRole'] == 'Paciente') ProgressStatsView(),
+          ProfileView(
+            name: _userData['userName'] ?? 'No disponible',
+            email: _userData['userEmail'] ?? 'No disponible',
+            role: _userData['userRole'] ?? 'No disponible',
+          ),
           ImageUploadView(),
         ],
       ),

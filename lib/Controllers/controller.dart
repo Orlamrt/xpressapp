@@ -18,7 +18,7 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
-
+import 'package:xpresatecch/Models/progress_model.dart';
 
 class ControllerTeach extends GetxController {
   var imagenes = <ImageModel>[].obs;
@@ -37,28 +37,33 @@ class ControllerTeach extends GetxController {
   var assignments = <Map<String, String>>[].obs; // Lista de asignaciones
   var qrImageUrl = ''.obs;
 
-
-
-
-
 // VOICE MODEL
 
   //Eleven labs api key and voice id
-  final String elevenLabsApiKey = 'sk_da13252af0c57eb5b6e41f4cbf4e2058c5b71c8b9078e034';
+  final String elevenLabsApiKey =
+      'sk_da13252af0c57eb5b6e41f4cbf4e2058c5b71c8b9078e034';
   final String isamarVoiceId = 'JYyJjNPfmNJdaby8LdZs';
 
   final String emmanuelVoiceId = 'qvN99qHpu3uqmqBD6pEt';
   final AudioPlayer _audioPlayer = AudioPlayer();
   var selectedAssistant = 'isamar'.obs;
 
-
-
-
+  // Agregar la variable observable para estadísticas
+  var progressStats = ProgressStats(
+    totalSessions: 0,
+    totalImagesUsed: 0,
+    successfulCommunications: 0,
+    categoryUsage: {},
+    mostUsedImages: {},
+    lastSession: DateTime.now(),
+    sessionHistory: [],
+  ).obs;
 
   @override
   void onInit() {
     super.onInit();
     _loadAuthStatus();
+    loadProgressStats(); // Cargar estadísticas al iniciar
   }
 
 
@@ -94,29 +99,14 @@ class ControllerTeach extends GetxController {
   }
 
 
-  /// Fetches and plays a phrase from ElevenLabs, with local caching.
-  ///
-  /// Checks for a local copy first. If not found, calls the API,
-  /// saves the audio to the cache, and then plays it.
+
+
   Future<String?> tellPhrase11labs(String text) async {
-    print("Requesting phrase: $text");
+    var voiceId =
+        (selectedAssistant == 'isamar') ? isamarVoiceId : emmanuelVoiceId;
+    final String url =
+        'https://api.elevenlabs.io/v1/text-to-speech/$voiceId?output_format=mp3_44100_96';
 
-    // 1. Determine the full path where the audio file should be cached.
-    final String filePath = await _getAudioFilePath(text, selectedAssistant.value);
-    final File audioFile = File(filePath);
-
-    // 2. Check if the file already exists in the cache.
-    if (await audioFile.exists()) {
-      print('Cache hit for "$text". Playing from local storage.');
-      // Play directly from the local file
-      await _audioPlayer.play(DeviceFileSource(filePath));
-      return filePath;
-    }
-
-    // 3. Cache miss: Call the API to generate the audio.
-    print('Cache miss for "$text". Calling ElevenLabs API...');
-    var voiceId = (selectedAssistant == 'isamar') ? isamarVoiceId : emmanuelVoiceId;
-    final String url = 'https://api.elevenlabs.io/v1/text-to-speech/$voiceId?output_format=mp3_44100_96';
     final Map<String, String> headers = {
       'Accept': 'audio/mpeg',
       'Content-Type': 'application/json',
@@ -154,57 +144,6 @@ class ControllerTeach extends GetxController {
       return null;
     }
   }
-
-
-
-  // Future<String?> tellPhrase11labs(String text) async {
-  //   print(text);
-  //  var voiceId = (selectedAssistant=='isamar')? isamarVoiceId:emmanuelVoiceId;
-  //   final String url = 'https://api.elevenlabs.io/v1/text-to-speech/$voiceId?output_format=mp3_44100_96';
-  //   final Map<String, String> headers = {
-  //     'Accept': 'audio/mpeg',
-  //     'Content-Type': 'application/json',
-  //     'xi-api-key': elevenLabsApiKey,
-  //   };
-  //   final Map<String, String> body = {
-  //     'text': text,
-  //     'model_id': 'eleven_multilingual_v2',
-  //   };
-  //
-  //   try {
-  //     final response = await http.post(
-  //       Uri.parse(url),
-  //       headers: headers,
-  //       body: jsonEncode(body),
-  //     );
-  //
-  //     if (response.statusCode == 200) {
-  //       final directory = await getTemporaryDirectory();
-  //       final filePath = '${directory.path}/audio.mp3';
-  //       final file = File(filePath);
-  //
-  //       await file.writeAsBytes(response.bodyBytes);
-  //
-  //       // Reproduce el audio la primera vez
-  //       await _audioPlayer.play(DeviceFileSource(filePath));
-  //
-  //       print('Audio reproducido y guardado en: $filePath');
-  //
-  //       // MODIFICADO: Devuelve la ruta del archivo si todo fue exitoso.
-  //       return filePath;
-  //     } else {
-  //       print('Error: ${response.statusCode}');
-  //       print('Response body: ${response.body}');
-  //       // MODIFICADO: Devuelve null si hubo un error.
-  //       return null;
-  //     }
-  //   } catch (e) {
-  //     print('Ocurrió un error: $e');
-  //     // MODIFICADO: Devuelve null si hubo una excepción.
-  //     return null;
-  //   }
-  // }
-
 
 
   Future<void> _loadAuthStatus() async {
@@ -351,42 +290,42 @@ class ControllerTeach extends GetxController {
     }
   }
 
- // Método para enviar la secuencia de pictogramas a la API Flask
-Future<String> enviarSolicitud(String sentence) async {
-  // URL de tu nueva API Flask
-  String apiUrl = 'http://72.60.25.229:5000/generate_sentence'; 
+  // Método para enviar la secuencia de pictogramas a la API Flask
+  Future<String> enviarSolicitud(String sentence) async {
+    // URL de tu nueva API Flask
+    String apiUrl = 'http://72.60.25.229:5000/generate_sentence';
 
-  Map<String, String> headers = {'Content-Type': 'application/json'};
+    Map<String, String> headers = {'Content-Type': 'application/json'};
 
-  // El backend espera 'sequence' con la oración sin procesar
-  String requestBody = jsonEncode({'sequence': sentence});
+    // El backend espera 'sequence' con la oración sin procesar
+    String requestBody = jsonEncode({'sequence': sentence});
 
-  try {
-    isLoading.value = true;
+    try {
+      isLoading.value = true;
 
-    var response = await http
-        .post(Uri.parse(apiUrl), headers: headers, body: requestBody)
-        .timeout(const Duration(seconds: 120));
+      var response = await http
+          .post(Uri.parse(apiUrl), headers: headers, body: requestBody)
+          .timeout(const Duration(seconds: 120));
 
-    isLoading.value = false;
+      isLoading.value = false;
 
-    if (response.statusCode == 200) {
-      Map<String, dynamic> data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        Map<String, dynamic> data = jsonDecode(response.body);
 
-      // Mostrar la oración generada por LLaMA
-      mostrarPopup(data['generated_sentence']);
-      return 'Ok';
-    } else {
-      mostrarPopup('El internet es inestable, vuelva a intentar más tarde');
+        // Mostrar la oración generada por LLaMA
+        mostrarPopup(data['generated_sentence']);
+        return 'Ok';
+      } else {
+        mostrarPopup('El internet es inestable, vuelva a intentar más tarde');
+        return 'Error';
+      }
+    } catch (error) {
+      isLoading.value = false;
+      mostrarPopup(
+          'Hubo un error inesperado, por favor vuelva a intentar más tarde');
       return 'Error';
     }
-  } catch (error) {
-    isLoading.value = false;
-    mostrarPopup('Hubo un error inesperado, por favor vuelva a intentar más tarde');
-    return 'Error';
   }
-}
-
 
   // Método para mostrar un popup con la frase generada
   void mostrarPopup(String fraseGenerada) async {
@@ -464,9 +403,7 @@ Future<String> enviarSolicitud(String sentence) async {
     try {
       // Realizar la solicitud POST al endpoint de registro en Flask
       final response = await http.post(
-
         Uri.parse('http://72.60.25.229:8080/register'),
-
         body: body,
       );
 
@@ -491,7 +428,6 @@ Future<String> enviarSolicitud(String sentence) async {
   Future<bool> loginUser(String email, String password) async {
     try {
       final response = await http.post(
-
         Uri.parse('http://72.60.25.229:8080/login'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
@@ -517,8 +453,11 @@ Future<String> enviarSolicitud(String sentence) async {
         // Solo guardar el UUID si el rol es 'Paciente'.
         // Intentamos con varias posibles claves que podría devolver el backend.
         if ((data['rol'] ?? '') == 'Paciente') {
-          final dynamic possibleUuid =
-              data['uuid'] ?? data['patient_uuid'] ?? data['patientUuid'] ?? data['uuidPaciente'] ?? data['uuid_paciente'];
+          final dynamic possibleUuid = data['uuid'] ??
+              data['patient_uuid'] ??
+              data['patientUuid'] ??
+              data['uuidPaciente'] ??
+              data['uuid_paciente'];
 
           if (possibleUuid != null && possibleUuid.toString().isNotEmpty) {
             await prefs.setString('patient_uuid', possibleUuid.toString());
@@ -527,7 +466,8 @@ Future<String> enviarSolicitud(String sentence) async {
             print('patient_uuid guardado: ' + possibleUuid.toString());
           } else {
             // ignore: avoid_print
-            print('Advertencia: No se recibió UUID en la respuesta para Paciente.');
+            print(
+                'Advertencia: No se recibió UUID en la respuesta para Paciente.');
           }
         }
 
@@ -740,8 +680,7 @@ Future<String> enviarSolicitud(String sentence) async {
 
     // Asegúrate de cambiar 'your-server-url' a la URL de tu servidor real
     final response = await http.post(
-      Uri.parse(
-          'http://72.60.25.229:8080/get-patient-qr'), 
+      Uri.parse('http://72.60.25.229:8080/get-patient-qr'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'uuid': patientUuid}),
     );
@@ -752,5 +691,153 @@ Future<String> enviarSolicitud(String sentence) async {
       // Maneja el caso donde no se obtuvo la imagen
       return null;
     }
+  }
+
+  // Método para registrar una nueva sesión
+  void recordSession(
+      List<ImageModel> imagesUsed, bool wasSuccessful, String phraseGenerated) {
+    final now = DateTime.now();
+
+    progressStats.update((stats) {
+      if (stats == null) return;
+
+      final updatedSessions = stats.totalSessions + 1;
+      final updatedImages = stats.totalImagesUsed + imagesUsed.length;
+      final updatedSuccess = wasSuccessful
+          ? stats.successfulCommunications + 1
+          : stats.successfulCommunications;
+
+      // Crear nuevo registro de sesión
+      final newHistory = [
+        SessionRecord(
+          date: now,
+          imagesUsed: imagesUsed.length,
+          wasSuccessful: wasSuccessful,
+          phraseGenerated: phraseGenerated,
+        ),
+        ...stats.sessionHistory
+      ];
+
+      // Limitar historial a 100 sesiones
+      if (newHistory.length > 100) {
+        newHistory.removeRange(100, newHistory.length);
+      }
+
+      // Actualizar uso de categorías e imágenes
+      final updatedCategoryUsage = Map<String, int>.from(stats.categoryUsage);
+      final updatedMostUsedImages = Map<String, int>.from(stats.mostUsedImages);
+
+      for (var image in imagesUsed) {
+        final category = image.imagePath.split('/').reversed.skip(1).first;
+        updatedCategoryUsage[category] =
+            (updatedCategoryUsage[category] ?? 0) + 1;
+
+        final imageName = image.nameOfImage ?? 'Sin nombre';
+        updatedMostUsedImages[imageName] =
+            (updatedMostUsedImages[imageName] ?? 0) + 1;
+      }
+
+      // Actualizar estadísticas
+      progressStats.value = ProgressStats(
+        totalSessions: updatedSessions,
+        totalImagesUsed: updatedImages,
+        successfulCommunications: updatedSuccess,
+        categoryUsage: updatedCategoryUsage,
+        mostUsedImages: updatedMostUsedImages,
+        lastSession: now,
+        sessionHistory: newHistory,
+      );
+    });
+
+    _saveProgressStats();
+  }
+
+  // Método para guardar estadísticas
+  Future<void> _saveProgressStats() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stats = progressStats.value;
+
+      final Map<String, dynamic> sessionHistoryJson = {
+        'sessions': stats.sessionHistory
+            .map((e) => {
+                  'date': e.date.toIso8601String(),
+                  'imagesUsed': e.imagesUsed,
+                  'wasSuccessful': e.wasSuccessful,
+                  'phraseGenerated': e.phraseGenerated,
+                })
+            .toList(),
+      };
+
+      await prefs.setInt('totalSessions', stats.totalSessions);
+      await prefs.setInt('totalImagesUsed', stats.totalImagesUsed);
+      await prefs.setInt(
+          'successfulCommunications', stats.successfulCommunications);
+      await prefs.setString('lastSession', stats.lastSession.toIso8601String());
+      await prefs.setString('categoryUsage', jsonEncode(stats.categoryUsage));
+      await prefs.setString('mostUsedImages', jsonEncode(stats.mostUsedImages));
+      await prefs.setString('sessionHistory', jsonEncode(sessionHistoryJson));
+    } catch (e) {
+      print('Error al guardar estadísticas: $e');
+    }
+  }
+
+  // Método para cargar estadísticas
+  Future<void> loadProgressStats() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      final totalSessions = prefs.getInt('totalSessions') ?? 0;
+      final totalImagesUsed = prefs.getInt('totalImagesUsed') ?? 0;
+      final successfulCommunications =
+          prefs.getInt('successfulCommunications') ?? 0;
+      final lastSession = DateTime.tryParse(
+          prefs.getString('lastSession') ?? DateTime.now().toIso8601String());
+
+      final Map<String, int> categoryUsage = Map<String, int>.from(
+          jsonDecode(prefs.getString('categoryUsage') ?? '{}'));
+
+      final Map<String, int> mostUsedImages = Map<String, int>.from(
+          jsonDecode(prefs.getString('mostUsedImages') ?? '{}'));
+
+      final sessionHistoryJson =
+          jsonDecode(prefs.getString('sessionHistory') ?? '{"sessions":[]}');
+      final List<SessionRecord> sessionHistory =
+          (sessionHistoryJson['sessions'] as List)
+              .map<SessionRecord>((e) => SessionRecord(
+                    date: DateTime.parse(e['date']),
+                    imagesUsed: e['imagesUsed'],
+                    wasSuccessful: e['wasSuccessful'],
+                    phraseGenerated: e['phraseGenerated'],
+                  ))
+              .toList();
+
+      progressStats.value = ProgressStats(
+        totalSessions: totalSessions,
+        totalImagesUsed: totalImagesUsed,
+        successfulCommunications: successfulCommunications,
+        categoryUsage: categoryUsage,
+        mostUsedImages: mostUsedImages,
+        lastSession: lastSession ?? DateTime.now(),
+        sessionHistory: sessionHistory,
+      );
+    } catch (e) {
+      print('Error al cargar estadísticas: $e');
+      // En caso de error, inicializar con valores por defecto
+      progressStats.value = ProgressStats(
+        totalSessions: 0,
+        totalImagesUsed: 0,
+        successfulCommunications: 0,
+        categoryUsage: {},
+        mostUsedImages: {},
+        lastSession: DateTime.now(),
+        sessionHistory: [],
+      );
+    }
+  }
+
+  // Agregar este método público
+  Future<void> saveProgressStats() async {
+    await _saveProgressStats();
   }
 }
