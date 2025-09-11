@@ -5,12 +5,14 @@ import 'package:xpresatecch/Controllers/mp3_controller.dart';
 import 'package:xpresatecch/Views/SplashScreen.dart';
 import 'package:xpresatecch/Views/principal_view_Paciente.dart'; // PrincipalViewPaciente
  // el de arriba
-
-void main() {
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+void main()async {
   WidgetsFlutterBinding.ensureInitialized();
+     await dotenv.load(fileName: ".env");
   Get.put(ControllerTeach()); // inyección del controller
   ControllerTeach controller = Get.find<ControllerTeach>();
    Get.put(AudioController());
+
   controller.copiarImagenesAssetsAlLocal();
   runApp(const MyApp());
 }

@@ -66,7 +66,7 @@ class BottomNavigationBarComponent extends StatelessWidget {
             ),
             child: BottomNavigationBar(
               elevation: 15,
-              backgroundColor: const Color(0xFFF2DCD8),
+              backgroundColor: const Color.fromARGB(255, 255, 255, 255),
               type: BottomNavigationBarType.fixed,
               showSelectedLabels: true,
               showUnselectedLabels: true,
