@@ -133,7 +133,7 @@ class _TecchView extends State<TecchView> {
     Widget _buildModalContent(BuildContext context) {
        final audioController = Get.find<AudioController>();
     return Container(
-      height: 200,
+      height: 300,
       padding: const EdgeInsets.all(16.0),
       child: Obx(
             () => Column(
@@ -178,6 +178,42 @@ class _TecchView extends State<TecchView> {
                 Navigator.pop(context);
               },
             ),
+                 RadioListTile<String>(
+        // Change title
+        title: const Text('Laura'),
+        // Change value
+        value: 'laura',
+        groupValue: controller.selectedAssistant.value,
+        onChanged: (value) {
+          if (value == null) return;
+          // Change selected value
+          controller.selectedAssistant.value = value;
+          // Change greeting audio file (make sure this file exists)
+          audioController.playAudio(
+              subDirectory: 'audio',
+              fileName: 'lauraAssistantGreetings.mp3'
+          );
+          Navigator.pop(context);
+        },
+      ),
+      RadioListTile<String>(
+        // Change title
+        title: const Text('Alex'),
+        // Change value
+        value: 'alex',
+        groupValue: controller.selectedAssistant.value,
+        onChanged: (value) {
+          if (value == null) return;
+          // Change selected value
+          controller.selectedAssistant.value = value;
+          // Change greeting audio file (make sure this file exists)
+          audioController.playAudio(
+              subDirectory: 'audio',
+              fileName: 'alexAssistantGreetings.mp3'
+          );
+          Navigator.pop(context);
+        },
+      ),
           ],
         ),
       ),

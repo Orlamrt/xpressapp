@@ -16,7 +16,7 @@ import 'package:xpresatecch/Constants/chat.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
-
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:xpresatecch/Models/progress_model.dart';
 
@@ -49,14 +49,19 @@ class ControllerTeach extends GetxController {
 
 
 
-  //Eleven labs api key and voice id
-  final String elevenLabsApiKey =
-      'sk_f39a3693e91d829c5bd72c555a75cab21dd698fc8dd7596c';
-  final String isamarVoiceId = 'JYyJjNPfmNJdaby8LdZs';
+  //Eleven labs api key and voice id's
+  final String elevenLabsApiKey = dotenv.env['ELEVENLABS_API_KEY'] ?? 'API_KEY_NOT_FOUND';
+  final String geminiApiKey = dotenv.env['GEMINI_API_KEY'] ?? 'API_KEY_NOT_FOUND';
+
+  final String isamarVoiceId = 'iyvXhCAqzDxKnq3FDjZl';
 
   final String emmanuelVoiceId = 'qvN99qHpu3uqmqBD6pEt';
+
+  final String lauraVoiceId='zl1Ut8dvwcVSuQSB9XkG';
+
+  final String alexVoiceId='6DsgX00trsI64jl83WWS';
   final AudioPlayer _audioPlayer = AudioPlayer();
-  var selectedAssistant = 'isamar'.obs;
+  var selectedAssistant = 'emmanuel'.obs;
 
   // Agregar la variable observable para estadísticas
   var progressStats = ProgressStats(
@@ -110,24 +115,49 @@ class ControllerTeach extends GetxController {
 
 
 
-  Future<String?> tellPhrase11labs(String text) async {
-    print("Requesting phrase: $text");
+ Future<String?> tellPhrase11labs(String text) async {
+    // --- LÍNEA DE DEPURACIÓN AÑADIDA ---
+    // Esto te dirá exactamente qué asistente está seleccionado CUANDO la función se ejecuta.
+    print("--- Iniciando tellPhrase11labs ---");
+    print("Asistente seleccionado: ${selectedAssistant.value}");
 
-    // 1. Determine the full path where the audio file should be cached.
+    // 1. Determinar la ruta completa donde el archivo de audio debe estar cacheado.
     final String filePath = await _getAudioFilePath(text, selectedAssistant.value);
     final File audioFile = File(filePath);
+    
+    // --- LÍNEA DE DEPURACIÓN AÑADIDA ---
+    print("Buscando archivo en la ruta: $filePath");
 
-    // 2. Check if the file already exists in the cache.
+
+    // 2. Comprobar si el archivo ya existe en la caché.
     if (await audioFile.exists()) {
-      print('Cache hit for "$text". Playing from local storage.');
-      // Play directly from the local file
+      print('Cache hit para "$text". Reproduciendo desde almacenamiento local.');
+      // Reproducir directamente desde el archivo local
       await _audioPlayer.play(DeviceFileSource(filePath));
       return filePath;
     }
 
-    // 3. Cache miss: Call the API to generate the audio.
-    print('Cache miss for "$text". Calling ElevenLabs API...');
-    var voiceId = (selectedAssistant.value == 'isamar') ? isamarVoiceId : emmanuelVoiceId;
+    // 3. El archivo no está en caché: Llamar a la API para generar el audio.
+    print('Cache miss para "$text". Llamando a la API de ElevenLabs...');
+    String voiceId;
+    switch (selectedAssistant.value) {
+      case 'isamar':
+        voiceId = isamarVoiceId;
+        break;
+      case 'laura':
+        voiceId = lauraVoiceId;
+        break;
+      case 'alex':
+        voiceId = alexVoiceId;
+        break;
+      case 'emmanuel':
+        voiceId = emmanuelVoiceId;
+        break;
+      default: // Maneja cualquier otro valor inesperado
+        print('Advertencia: Asistente desconocido seleccionado. Usando a Emmanuel por defecto.');
+        voiceId = emmanuelVoiceId;
+        break;
+    }
     final String url = 'https://api.elevenlabs.io/v1/text-to-speech/$voiceId?output_format=mp3_44100_96';
 
     final Map<String, String> headers = {
@@ -136,7 +166,7 @@ class ControllerTeach extends GetxController {
       'xi-api-key': elevenLabsApiKey,
     };
     final Map<String, dynamic> body = {
-      'text': text, // Use the ORIGINAL text for the API call
+      'text': text, // Usar el texto ORIGINAL para la llamada a la API
       'model_id': 'eleven_multilingual_v2',
     };
 
@@ -148,26 +178,25 @@ class ControllerTeach extends GetxController {
       );
 
       if (response.statusCode == 200) {
-        // 4. Save the new audio file to the cache.
-        // Ensure the directory exists before writing the file.
+        // 4. Guardar el nuevo archivo de audio en la caché.
+        // Asegurarse de que el directorio exista antes de escribir el archivo.
         await audioFile.parent.create(recursive: true);
         await audioFile.writeAsBytes(response.bodyBytes);
 
-        // 5. Play the newly downloaded audio.
+        // 5. Reproducir el audio recién descargado.
         await _audioPlayer.play(DeviceFileSource(filePath));
-        print('Audio saved and played from: $filePath');
+        print('Audio guardado y reproducido desde: $filePath');
         return filePath;
       } else {
-        print('Error fetching audio from API: ${response.statusCode}');
-        print('Response body: ${response.body}');
+        print('Error al obtener audio de la API: ${response.statusCode}');
+        print('Cuerpo de la respuesta: ${response.body}');
         return null;
       }
     } catch (e) {
-      print('An exception occurred during API call: $e');
+      print('Ocurrió una excepción durante la llamada a la API: $e');
       return null;
     }
   }
-
 
   Future<void> _loadAuthStatus() async {
     final prefs = await SharedPreferences.getInstance();
@@ -314,41 +343,103 @@ class ControllerTeach extends GetxController {
   }
 
   // Método para enviar la secuencia de pictogramas a la API Flask
-  Future<String> enviarSolicitud(String sentence) async {
-    // URL de tu nueva API Flask
-    String apiUrl = 'http://72.60.25.229:5000/generate_sentence';
+  // Future<String> enviarSolicitud(String sentence) async {
+  //   // URL de tu nueva API Flask
+  //   String apiUrl = 'http://72.60.25.229:5000/generate_sentence';
 
-    Map<String, String> headers = {'Content-Type': 'application/json'};
+  //   Map<String, String> headers = {'Content-Type': 'application/json'};
 
-    // El backend espera 'sequence' con la oración sin procesar
-    String requestBody = jsonEncode({'sequence': sentence});
+  //   // El backend espera 'sequence' con la oración sin procesar
+  //   String requestBody = jsonEncode({'sequence': sentence});
+
+  //   try {
+  //     isLoading.value = true;
+
+  //     var response = await http
+  //         .post(Uri.parse(apiUrl), headers: headers, body: requestBody)
+  //         .timeout(const Duration(seconds: 120));
+
+  //     isLoading.value = false;
+
+  //     if (response.statusCode == 200) {
+  //       Map<String, dynamic> data = jsonDecode(response.body);
+
+  //       // Mostrar la oración generada por LLaMA
+  //       mostrarPopup(data['generated_sentence']);
+  //       return 'Ok';
+  //     } else {
+  //       mostrarPopup('El internet es inestable, vuelva a intentar más tarde');
+  //       return 'Error';
+  //     }
+  //   } catch (error) {
+  //     isLoading.value = false;
+  //     mostrarPopup(
+  //         'Hubo un error inesperado, por favor vuelva a intentar más tarde');
+  //     return 'Error';
+  //   }
+  // }
+
+
+    Future<String> enviarSolicitud(String sentence) async {
+
+   
+    const String apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+
+    Map<String, String> headers = {
+      'x-goog-api-key': geminiApiKey,
+      'Content-Type': 'application/json',
+    };
+
+    // Define la instrucción del sistema y el contenido de la solicitud
+    // El 'system_instruction' es la forma en que Gemini entiende el "comportamiento"
+    String requestBody = jsonEncode({
+      "system_instruction": {
+        "parts": [
+          {
+            "text": "[ROL Y OBJETIVO]\nActúas como el núcleo de un sistema de Comunicación Aumentativa y Alternativa (CAA) diseñado para un usuario que se comunica a través de pictogramas. Tu objetivo principal es ser la voz del usuario, traduciendo secuencias de palabras clave en una única oración en español que sea gramaticalmente correcta, contextualmente apropiada y humanizada. Debes interpretar la intención detrás de los pictogramas, no solo traducirlos literalmente, todos los sujetos son familiares del usuario (usa mi abuelo, mi hermano, etc) a excepcion de maestro y terapeuta (usa el maestro, el terapeuta).\n\n[REGLAS FUNDAMENTALES]\n1.  **Interpretación del Sujeto y la Intención:** Esta es tu regla más importante.\n    * **Primera Persona (YO):** Si la secuencia empieza con \"yo\" o la intención es claramente personal, formula una necesidad, deseo, sentimiento o acción del usuario. Aquí es apropiado usar un tono más personal y, si el contexto lo sugiere, amable.\n    * **Instrucción Recibida (OTRO + YO):** Si la secuencia empieza con otro sujeto (ej. \"mamá\", \"maestro\") pero también incluye \"yo\", interpreta la frase como una acción, petición o estado que ese sujeto dirige hacia el usuario. Infiere verbos como \"quiere que\", \"me dijo que\", \"necesita que\".\n    * **Observación de Terceros (OTROS):** Si la secuencia describe a otras personas y no incluye a \"yo\", interprétala como una observación objetiva de una situación. El tono debe ser más neutro y descriptivo.\n\n2.  **Inferencia Lógica:** Con secuencias cortas o implícitas, infiere la intención más probable y común. Debes completar la idea para que sea funcional.\n    * Ej: ['yo', 'agua'] no es \"yo agua\", sino \"Quiero un vaso de agua\" o \"Tengo sed\".\n\n3.  **Coherencia y Naturalidad:** Añade todos los elementos gramaticales necesarios (artículos, preposiciones, conjunciones, verbos auxiliares) para construir una oración fluida y que suene humana. Evita las estructuras robóticas o excesivamente literales.\n\n4.  **Tiempo y Conjugación:** Conjuga los verbos de forma gramaticalmente correcta en **tiempo presente**, a menos que una palabra clave indique explícitamente un tiempo diferente (ej. \"ayer\", \"mañana\", \"lunes\", \"después\").\n\n5.  **Conservación del Significado:** Respeta la intensidad y el significado específico de cada palabra clave. \"Furioso\" es más intenso que \"enojado\"; \"necesitar\" es más fuerte que \"querer\".\n\n[FORMATO DE SALIDA]\nDevuelve únicamente la oración final completa, sin comillas, etiquetas ni explicaciones adicionales.\n\n[EJEMPLOS PRÁCTICOS]\n\nInput: [\"yo\", \"sentir\", \"triste\", \"hoy\"]\nOutput: \"Hoy me siento triste.\"\n\nInput: [\"jugar\", \"amigo\", \"casa\", \"mañana\"]\nOutput: \"Mañana quiero jugar con mi amigo en mi casa.\"\n\nInput: [\"mamá\", \"decir\", \"limpiar\", \"cuarto\", \"yo\"]\nOutput: \"Mamá me dijo que limpie mi cuarto.\"\n\nInput: [\"abuela\", \"cocinar\", \"espaguetis\", \"nosotros\"]\nOutput: \"La abuela está cocinando espaguetis para nosotros.\"\n\nInput: [\"yo\", \"frío\"]\nOutput: \"Tengo frío.\"\n\nInput: [\"terapeuta\", \"llegar\", \"ayer\"]\nOutput: \"El terapeuta llegó ayer.\""
+          }
+        ]
+      },
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": sentence // La variable 'sentence' se inserta aquí
+            }
+          ]
+        }
+      ]
+    });
 
     try {
       isLoading.value = true;
 
       var response = await http
           .post(Uri.parse(apiUrl), headers: headers, body: requestBody)
-          .timeout(const Duration(seconds: 120));
+          .timeout(const Duration(seconds: 15));
 
       isLoading.value = false;
 
       if (response.statusCode == 200) {
         Map<String, dynamic> data = jsonDecode(response.body);
 
-        // Mostrar la oración generada por LLaMA
-        mostrarPopup(data['generated_sentence']);
+        // Navega en la estructura JSON para obtener la respuesta
+        // El camino es: 'candidates' -> primer elemento -> 'content' -> 'parts' -> primer elemento -> 'text'
+        String generatedSentence = data['candidates'][0]['content']['parts'][0]['text'];
+
+        mostrarPopup(generatedSentence);
         return 'Ok';
       } else {
-        mostrarPopup('El internet es inestable, vuelva a intentar más tarde');
+        mostrarPopup('El internet es inestable. Código de error: ${response.statusCode}');
         return 'Error';
       }
     } catch (error) {
       isLoading.value = false;
-      mostrarPopup(
-          'Hubo un error inesperado, por favor vuelva a intentar más tarde');
+      mostrarPopup('Hubo un error inesperado, por favor vuelva a intentar más tarde. Error: $error');
       return 'Error';
     }
   }
+
 
   // Método para mostrar un popup con la frase generada
   // MODIFICADO: Ahora la función principal maneja la lógica de la UI.
