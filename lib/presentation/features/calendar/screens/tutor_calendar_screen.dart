@@ -13,9 +13,7 @@ class TutorCalendarScreen extends GetView<TutorCalendarController> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mis citas'),
-      ),
+      appBar: AppBar(title: const Text('Mis citas')),
       body: SafeArea(
         child: Obx(() {
           if (!controller.isTutor) {
@@ -68,8 +66,14 @@ class TutorCalendarScreen extends GetView<TutorCalendarController> {
               color: colorScheme.primary,
               fontWeight: FontWeight.bold,
             ),
-            leftChevronIcon: Icon(Icons.chevron_left, color: colorScheme.primary),
-            rightChevronIcon: Icon(Icons.chevron_right, color: colorScheme.primary),
+            leftChevronIcon: Icon(
+              Icons.chevron_left,
+              color: colorScheme.primary,
+            ),
+            rightChevronIcon: Icon(
+              Icons.chevron_right,
+              color: colorScheme.primary,
+            ),
           ),
           calendarStyle: CalendarStyle(
             todayDecoration: BoxDecoration(
@@ -80,18 +84,19 @@ class TutorCalendarScreen extends GetView<TutorCalendarController> {
               color: colorScheme.primary,
               shape: BoxShape.circle,
             ),
-            selectedTextStyle: theme.textTheme.bodyLarge?.copyWith(
-              color: colorScheme.onPrimary,
-            ),
-            todayTextStyle: theme.textTheme.bodyLarge?.copyWith(
-              color: colorScheme.primary,
-              fontWeight: FontWeight.w700,
-            ),
+            selectedTextStyle: (theme.textTheme.bodyLarge ?? const TextStyle())
+                .copyWith(color: colorScheme.onPrimary),
+            todayTextStyle: (theme.textTheme.bodyLarge ?? const TextStyle())
+                .copyWith(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                ),
             markerDecoration: BoxDecoration(
               color: colorScheme.secondary,
               shape: BoxShape.circle,
             ),
           ),
+
           eventLoader: controller.appointmentsForDay,
           onDaySelected: (selectedDay, focusedDay) {
             controller.onDaySelected(selectedDay, focusedDay);
@@ -117,7 +122,10 @@ class _AppointmentsList extends GetView<TutorCalendarController> {
 
     return Obx(() {
       if (controller.errorMessage.isNotEmpty) {
-        return _ErrorState(theme: theme, message: controller.errorMessage.value);
+        return _ErrorState(
+          theme: theme,
+          message: controller.errorMessage.value,
+        );
       }
 
       final items = controller.appointmentsForSelectedDay;
@@ -166,14 +174,18 @@ class _AppointmentsList extends GetView<TutorCalendarController> {
             ),
           Text(
             'Citas para el ${controller.selectedDay.value.day}/${controller.selectedDay.value.month}',
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 12),
-          ...items.map((appointment) => _AppointmentTile(
-                appointment: appointment,
-                theme: theme,
-                timeLabel: controller.formatTimeRange(appointment),
-              )),
+          ...items.map(
+            (appointment) => _AppointmentTile(
+              appointment: appointment,
+              theme: theme,
+              timeLabel: controller.formatTimeRange(appointment),
+            ),
+          ),
         ],
       );
     });
@@ -308,7 +320,9 @@ class _UnauthorizedMessage extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'Acceso restringido',
-              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             Text(

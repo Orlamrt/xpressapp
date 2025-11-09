@@ -31,7 +31,7 @@ class HomeScreen extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Tablero',
+                    '',
                     style: theme.textTheme.titleLarge?.copyWith(
                       color: titleColor,
                       fontWeight: FontWeight.w700,
@@ -40,8 +40,7 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(width: 8),
                   SvgPicture.asset(
                     'assets/images/imagen.svg',
-                    height: 24,
-                    colorFilter: ColorFilter.mode(titleColor, BlendMode.srcIn),
+                    height: 180,
                     semanticsLabel: 'Icono del tablero TEACCH',
                   ),
                 ],
