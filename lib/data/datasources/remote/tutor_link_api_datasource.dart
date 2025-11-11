@@ -35,7 +35,7 @@ class TutorLinkApiDatasourceImpl implements TutorLinkApiDatasource {
     required String tutorEmail,
   }) async {
     final response = await _client.post(
-      _buildUri('/link-tutor-patient'),
+      _buildUri('link/link-tutor-patient'),
       headers: _headers,
       body: jsonEncode({
         'patient_uuid': patientUuid,
