@@ -15,7 +15,7 @@ class XpressatecHeaderAppBar extends StatelessWidget
   final bool showBack;
 
   @override
-  Size get preferredSize => const Size.fromHeight(80);
+  Size get preferredSize => const Size.fromHeight(50);
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +23,7 @@ class XpressatecHeaderAppBar extends StatelessWidget
     final color = theme.colorScheme.onSurface;
 
     return AppBar(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: Colors.white12,
       elevation: 0,
       automaticallyImplyLeading: false,
       centerTitle: true,

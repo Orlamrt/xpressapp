@@ -18,7 +18,8 @@ class CommunicationTherapistMarketplaceScreen extends GetView<CommunicationThera
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE3F2FD),
+      backgroundColor: Colors.white
+      ,
       appBar: const XpressatecHeaderAppBar(showBack: true),
       body: SafeArea(
         child: Padding(
