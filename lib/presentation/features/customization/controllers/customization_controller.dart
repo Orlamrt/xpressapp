@@ -214,7 +214,7 @@ class CustomizationController extends GetxController {
       final List<PlatformUiSettings> cropperSettings = [];
       if (GetPlatform.isAndroid) {
         cropperSettings.add(
-           AndroidUiSettings(
+          const AndroidUiSettings(
             toolbarTitle: 'Ajustar pictograma',
             lockAspectRatio: true,
             hideBottomControls: true,
@@ -223,27 +223,22 @@ class CustomizationController extends GetxController {
       }
       if (GetPlatform.isIOS) {
         cropperSettings.add(
-           IOSUiSettings(
+          const IOSUiSettings(
             title: 'Ajustar pictograma',
             aspectRatioLockEnabled: true,
           ),
         );
       }
-            if (GetPlatform.isWeb && Get.context != null) {
+      if (GetPlatform.isWeb && Get.context != null) {
         cropperSettings.add(
           WebUiSettings(
             context: Get.context!,
-            // Si tu versión soporta estilos, puedes usar algo como:
-            // presentStyle: CropperPresentStyle.dialog,
-            // pero lo dejamos comentado para evitar el error de tipo indefinido.
-            // Opciones típicas disponibles según la versión:
-            // enableExif: true,
-            // enableZoom: true,
-            // showZoomer: true,
+            presentStyle: CropperPresentStyle.dialog,
+            enableResize: true,
+            lockAspectRatio: true,
           ),
         );
       }
-
 
       final CroppedFile? cropped = await _imageCropper.cropImage(
         sourcePath: file.path,
