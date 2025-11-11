@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:xpressatec/core/config/routes.dart';
 import 'package:xpressatec/presentation/features/auth/controllers/auth_controller.dart';
+
+import 'drawer_action_card.dart';
+
 class CustomDrawer extends StatelessWidget {
   const CustomDrawer({super.key});
 
@@ -23,7 +26,7 @@ class CustomDrawer extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  colorScheme.primary,
+                  Colors.lightBlue,
                   colorScheme.primaryContainer,
                 ],
                 begin: Alignment.topLeft,
@@ -65,144 +68,63 @@ class CustomDrawer extends StatelessWidget {
           // Enlazar tutor (Destacado) - Solo mostrar para pacientes
           Obx(() {
             if (authController.isPaciente) {
-              return Container(
-                margin: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      colorScheme.primary,
-                      colorScheme.primaryContainer,
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.primary.withOpacity(0.25),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: ListTile(
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: DrawerActionCard(
+                  leadingIcon: Icons.link,
+                  title: 'Enlazar tutor',
+                  subtitle: 'Comparte tu código QR con tu tutor',
                   onTap: () => Get.toNamed(Routes.linkTutor),
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: colorScheme.onPrimary,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(Icons.link, color: colorScheme.primary),
-                  ),
-                  title: Text(
-                    'Enlazar tutor',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: colorScheme.onPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'Comparte tu código QR con tu tutor',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onPrimary.withOpacity(0.8),
-                    ),
-                  ),
-                  trailing: Icon(Icons.arrow_forward_ios, color: colorScheme.onPrimary),
                 ),
               );
-            } else {
+            }
+            return const SizedBox.shrink();
+          }),
+          // Escanear QR y Mis citas - Mostrar según rol
+          Obx(() {
+            final bool showScan = authController.isTutor;
+            final bool showAppointments =
+                authController.isTutor || authController.isTerapeuta;
+
+            if (!showScan && !showAppointments) {
               return const SizedBox.shrink();
             }
-          }),
-          // Escanear QR - Solo mostrar para tutores
-          Obx(() {
-            if (authController.isTutor) {
-              return Column(
-                children: [
-                  Container(
-                    margin: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          colorScheme.primary,
-                          colorScheme.primaryContainer,
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colorScheme.primary.withOpacity(0.25),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: ListTile(
+
+            return Column(
+              children: [
+                if (showScan)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    child: DrawerActionCard(
+                      leadingIcon: Icons.qr_code_scanner,
+                      title: 'Escanear QR',
+                      subtitle: 'Escanea el código del paciente',
                       onTap: () => Get.toNamed(Routes.scanQr),
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: colorScheme.onPrimary,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(Icons.qr_code_scanner, color: colorScheme.primary),
-                      ),
-                      title: Text(
-                        'Escanear QR',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: colorScheme.onPrimary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      subtitle: Text(
-                        'Escanea el código del paciente para enlazar',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onPrimary.withOpacity(0.8),
-                        ),
-                      ),
-                      trailing: Icon(Icons.arrow_forward_ios, color: colorScheme.onPrimary),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colorScheme.primary.withOpacity(0.1),
-                          blurRadius: 6,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: ListTile(
+                if (showAppointments)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    child: DrawerActionCard(
+                      leadingIcon: Icons.event,
+                      title: 'Mis citas',
+                      subtitle: 'Revisa tu agenda de sesiones',
                       onTap: () => Get.toNamed(Routes.tutorCalendar),
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(Icons.calendar_month, color: colorScheme.primary),
-                      ),
-                      title: Text(
-                        'Mis citas',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      subtitle: Text(
-                        'Consulta el calendario de sesiones programadas',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurface.withOpacity(0.7),
-                        ),
-                      ),
-                      trailing: Icon(Icons.arrow_forward_ios, color: colorScheme.primary),
                     ),
                   ),
-                ],
+              ],
+            );
+          }),
+          Obx(() {
+            if (authController.isTutor || authController.isTerapeuta) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: DrawerActionCard(
+                  leadingIcon: Icons.person_search,
+                  title: 'Buscar terapeutas',
+                  subtitle: 'Explora terapeutas en comunicación',
+                  onTap: () => Get.toNamed(Routes.communicationTherapists),
+                ),
               );
             }
             return const SizedBox.shrink();
@@ -211,12 +133,12 @@ class CustomDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.settings),
             title: const Text('Ajustes'),
-            onTap: () => Get.toNamed('/settings'),
+            onTap: () => Get.toNamed(Routes.settings),
           ),
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: const Text('Acerca de'),
-            onTap: () => Get.toNamed('/about'),
+            onTap: () => Get.toNamed(Routes.about),
           ),
           ListTile(
             leading: const Icon(Icons.mic, color: Colors.orange),

@@ -2,13 +2,12 @@ import 'package:get/get.dart';
 import 'package:xpressatec/domain/entities/user.dart';
 import 'package:xpressatec/presentation/features/auth/controllers/auth_controller.dart';
 
-enum NavigationSection { teacch, chat, customization, statistics }
+enum NavigationSection { teacch, chat, statistics }
 
 class NavigationController extends GetxController {
   final RxInt currentIndex = 0.obs;
   final RxList<NavigationSection> sections = <NavigationSection>[
     NavigationSection.teacch,
-    NavigationSection.customization,
     NavigationSection.statistics,
   ].obs;
 
@@ -43,7 +42,6 @@ class NavigationController extends GetxController {
     final updatedSections = <NavigationSection>[
       NavigationSection.teacch,
       if (isTutor || isTerapeuta) NavigationSection.chat,
-      NavigationSection.customization,
       NavigationSection.statistics,
     ];
 

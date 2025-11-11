@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../controllers/link_tutor_controller.dart';
+import '../../../shared/widgets/xpressatec_header_appbar.dart';
 
 class LinkTutorScreen extends GetView<LinkTutorController> {
   const LinkTutorScreen({super.key});
@@ -14,17 +15,14 @@ class LinkTutorScreen extends GetView<LinkTutorController> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Enlazar tutor'),
-        centerTitle: true,
-      ),
+      appBar: const XpressatecHeaderAppBar(showBack: true),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              colorScheme.primary.withOpacity(0.08),
+              Colors.white10,
               colorScheme.surface,
             ],
           ),
@@ -35,23 +33,23 @@ class LinkTutorScreen extends GetView<LinkTutorController> {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const SizedBox(height: 16),
+                  Text(
+                    'Enlazar tutor',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Text(
                     'Comparte este código con tu tutor para enlazar su cuenta contigo.',
-                    textAlign: TextAlign.center,
+                    textAlign: TextAlign.start,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Tu tutor podrá escanearlo desde su aplicación para comenzar a acompañarte en XPRESSATEC.',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      height: 1.4,
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -85,33 +83,6 @@ class LinkTutorScreen extends GetView<LinkTutorController> {
                       theme: theme,
                     );
                   }),
-                  const SizedBox(height: 32),
-                  Obx(() {
-                    final uuid = controller.patientUuid;
-                    if (uuid == null || uuid.isEmpty) {
-                      return const SizedBox.shrink();
-                    }
-                    return Column(
-                      children: [
-                        Text(
-                          'Tu identificador personal',
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: colorScheme.onSurface.withOpacity(0.75),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        SelectableText(
-                          uuid,
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.6,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                      ],
-                    );
-                  }),
                 ],
               ),
             ),
@@ -126,7 +97,11 @@ class LinkTutorScreen extends GetView<LinkTutorController> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 48),
       decoration: _cardDecoration(colorScheme),
-      child: const Center(child: CircularProgressIndicator()),
+      child: Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation(colorScheme.primary),
+        ),
+      ),
     );
   }
 
@@ -136,14 +111,14 @@ class LinkTutorScreen extends GetView<LinkTutorController> {
       borderRadius: BorderRadius.circular(24),
       boxShadow: [
         BoxShadow(
-          color: colorScheme.primary.withOpacity(0.12),
+          color: colorScheme.primary.withOpacity(0.18),
           blurRadius: 16,
           offset: const Offset(0, 8),
         ),
       ],
       border: Border.all(
-        color: colorScheme.primary.withOpacity(0.1),
-        width: 1.2,
+        color: colorScheme.primary.withOpacity(0.35),
+        width: 1.4,
       ),
     );
   }
@@ -171,13 +146,14 @@ class _QrContent extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.primary.withOpacity(0.12),
+            color: colorScheme.primary.withOpacity(0.18),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
         ],
         border: Border.all(
-          color: colorScheme.primary.withOpacity(0.1),
+          color: colorScheme.primary.withOpacity(0.35),
+          width: 1.4,
         ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -187,7 +163,7 @@ class _QrContent extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceVariant,
+              color: colorScheme.primary.withOpacity(0.08),
               borderRadius: BorderRadius.circular(20),
             ),
             child: ClipRRect(
@@ -202,7 +178,7 @@ class _QrContent extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'El tutor debe escanear este código desde su aplicación.',
+            'Pide a tu tutor que escanee este código desde su aplicación para completar el enlace.',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurface,
@@ -211,7 +187,11 @@ class _QrContent extends StatelessWidget {
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: onRefresh,
-            icon: const Icon(Icons.refresh),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.lightBlue,
+              foregroundColor: colorScheme.onPrimary,
+            ),
+            icon: Icon(Icons.refresh, color: colorScheme.onPrimary),
             label: const Text('Actualizar código'),
           ),
         ],
@@ -266,7 +246,11 @@ class _ErrorState extends StatelessWidget {
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: onRetry,
-            icon: const Icon(Icons.refresh),
+            style: FilledButton.styleFrom(
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+            ),
+            icon: Icon(Icons.refresh, color: colorScheme.onPrimary),
             label: const Text('Reintentar'),
           ),
         ],

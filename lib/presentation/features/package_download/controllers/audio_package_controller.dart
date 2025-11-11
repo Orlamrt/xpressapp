@@ -18,17 +18,35 @@ class AudioPackageController extends GetxController {
   final RxString errorMessage = ''.obs;
   final RxList<String> availableAssistants = <String>[].obs;
   final RxString selectedAssistant = 'emmanuel'.obs;
+  final RxBool hasDownloaded = false.obs;
+  final RxBool downloadFailed = false.obs;
 
   @override
   void onInit() {
     super.onInit();
-    _checkAvailableAssistants();
+    refreshStatus();
+  }
+
+  Future<void> refreshStatus() async {
+    try {
+      isChecking.value = true;
+      downloadFailed.value = false;
+      errorMessage.value = '';
+
+      hasDownloaded.value = await _packageManager.isPackageDownloaded();
+
+      await _checkAvailableAssistants();
+    } catch (e) {
+      print('❌ Error refreshing audio package status: $e');
+      errorMessage.value = 'Error al verificar el estado de los paquetes de audio';
+    } finally {
+      isChecking.value = false;
+    }
   }
 
   /// Check which assistants are available in Firebase
   Future<void> _checkAvailableAssistants() async {
     try {
-      isChecking.value = true;
       final assistants = await _packageManager.getAvailableAssistants();
       availableAssistants.value = assistants;
 
@@ -41,19 +59,20 @@ class AudioPackageController extends GetxController {
     } catch (e) {
       print('❌ Error checking assistants: $e');
       errorMessage.value = 'Error al verificar asistentes disponibles';
-    } finally {
-      isChecking.value = false;
     }
   }
 
   /// Start downloading the selected assistant package
-  Future<void> downloadPackage() async {
+  Future<void> downloadPackage({bool navigateOnSuccess = true}) async {
+    if (isDownloading.value) return;
+
     try {
       isDownloading.value = true;
       errorMessage.value = '';
       downloadProgress.value = 0.0;
       currentFile.value = 0;
       totalFiles.value = 0;
+      downloadFailed.value = false;
 
       print('📥 Starting download for: ${selectedAssistant.value}');
 
@@ -68,20 +87,27 @@ class AudioPackageController extends GetxController {
       );
 
       if (success) {
+        hasDownloaded.value = true;
+        downloadFailed.value = false;
         Get.snackbar(
-          '✅ Descarga completa',
-          'Paquete de audio instalado correctamente',
+          'Descarga completa',
+          'Paquetes de audio descargados correctamente.',
           snackPosition: SnackPosition.BOTTOM,
         );
 
-        // Navigate to login after successful download
-        await Future.delayed(const Duration(seconds: 1));
-        Get.offAllNamed(Routes.login);
+        if (navigateOnSuccess) {
+          // Navigate to login after successful download
+          await Future.delayed(const Duration(seconds: 1));
+          Get.offAllNamed(Routes.login);
+        }
       } else {
-        errorMessage.value = 'Error al descargar el paquete completo. Intenta nuevamente.';
+        downloadFailed.value = true;
+        errorMessage.value =
+            'Error al descargar los paquetes de audio. Intenta nuevamente.';
       }
     } catch (e) {
       print('❌ Error downloading package: $e');
+      downloadFailed.value = true;
       errorMessage.value = 'Error: $e';
     } finally {
       isDownloading.value = false;

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:xpressatec/domain/entities/appointment.dart';
 import 'package:xpressatec/presentation/features/calendar/controllers/tutor_calendar_controller.dart';
+import '../../../shared/widgets/xpressatec_header_appbar.dart';
 
 class TutorCalendarScreen extends GetView<TutorCalendarController> {
   const TutorCalendarScreen({super.key});
@@ -13,11 +14,24 @@ class TutorCalendarScreen extends GetView<TutorCalendarController> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Mis citas')),
+      appBar: const XpressatecHeaderAppBar(showBack: true),
       body: SafeArea(
         child: Obx(() {
           if (!controller.isTutor) {
-            return _UnauthorizedMessage(theme: theme);
+            return ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              children: [
+                const SizedBox(height: 16),
+                Text(
+                  'Mis citas',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _UnauthorizedMessage(theme: theme),
+              ],
+            );
           }
 
           return RefreshIndicator(
@@ -26,6 +40,14 @@ class TutorCalendarScreen extends GetView<TutorCalendarController> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
               children: [
+                const SizedBox(height: 16),
+                Text(
+                  'Mis citas',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 24),
                 _buildCalendar(theme, colorScheme),
                 const SizedBox(height: 24),
                 _AppointmentsList(theme: theme),
@@ -84,13 +106,15 @@ class TutorCalendarScreen extends GetView<TutorCalendarController> {
               color: colorScheme.primary,
               shape: BoxShape.circle,
             ),
-            selectedTextStyle: (theme.textTheme.bodyLarge ?? const TextStyle())
-                .copyWith(color: colorScheme.onPrimary),
-            todayTextStyle: (theme.textTheme.bodyLarge ?? const TextStyle())
-                .copyWith(
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.w700,
-                ),
+            selectedTextStyle:
+                (theme.textTheme.bodyLarge ?? const TextStyle()).copyWith(
+              color: colorScheme.onPrimary,
+            ),
+            todayTextStyle:
+                (theme.textTheme.bodyLarge ?? const TextStyle()).copyWith(
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
             markerDecoration: BoxDecoration(
               color: colorScheme.secondary,
               shape: BoxShape.circle,

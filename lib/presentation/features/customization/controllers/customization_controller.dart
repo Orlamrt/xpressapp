@@ -12,6 +12,8 @@ import '../../../../data/datasources/local/local_storage.dart';
 import '../../../../data/datasources/remote/media_api_datasource.dart';
 import '../../../../data/models/custom_pictogram.dart';
 
+enum PictogramDownloadStatus { alreadyDownloaded, success, failure }
+
 class CustomizationController extends GetxController {
   CustomizationController({
     required this.mediaApiDatasource,
@@ -68,7 +70,42 @@ class CustomizationController extends GetxController {
     }
   }
 
-  Future<void> downloadAllAssets() async {
+  bool get hasDownloadedPictograms =>
+      localStorage.getBool(_downloadedKey) ?? false;
+
+  Future<void> refreshDownloadStatus() async {
+    final downloaded = hasDownloadedPictograms;
+    assetsReady.value = downloaded;
+    if (downloaded) {
+      await _hydrateLocalCache();
+    }
+  }
+
+  Future<PictogramDownloadStatus> downloadPictogramsIfNeeded({
+    bool showProgressDialog = true,
+    bool showFeedback = true,
+  }) async {
+    if (hasDownloadedPictograms) {
+      assetsReady.value = true;
+      await _hydrateLocalCache();
+      return PictogramDownloadStatus.alreadyDownloaded;
+    }
+
+    await downloadAllAssets(
+      showProgressDialog: showProgressDialog,
+      showFeedback: showFeedback,
+    );
+
+    if (downloadFailed.value) {
+      return PictogramDownloadStatus.failure;
+    }
+    return PictogramDownloadStatus.success;
+  }
+
+  Future<void> downloadAllAssets({
+    bool showProgressDialog = true,
+    bool showFeedback = true,
+  }) async {
     if (isDownloading.value) return;
 
     isDownloading.value = true;
@@ -76,7 +113,9 @@ class CustomizationController extends GetxController {
     downloadedCount.value = 0;
     totalCount.value = PictogramPaths.values.length;
 
-    _showProgressDialog();
+    if (showProgressDialog) {
+      _showProgressDialog();
+    }
 
     for (final relativePath in PictogramPaths.values) {
       try {
@@ -93,24 +132,28 @@ class CustomizationController extends GetxController {
     }
 
     isDownloading.value = false;
-    if (Get.isDialogOpen == true) {
+    if (showProgressDialog && Get.isDialogOpen == true) {
       Get.back();
     }
 
     if (!downloadFailed.value) {
       await localStorage.saveBool(_downloadedKey, true);
       assetsReady.value = true;
-      Get.snackbar(
-        'Descarga completa',
-        'Los pictogramas se guardaron en el dispositivo.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      if (showFeedback) {
+        Get.snackbar(
+          'Descarga exitosa',
+          'Pictogramas descargados correctamente.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
     } else {
-      Get.snackbar(
-        'Descarga incompleta',
-        'Usaremos las imágenes en línea mientras tanto.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      if (showFeedback) {
+        Get.snackbar(
+          'Error',
+          'Ocurrió un error al descargar los pictogramas. Intenta nuevamente.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
     }
   }
 

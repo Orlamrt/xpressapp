@@ -39,12 +39,6 @@ class BottomNavBar extends StatelessWidget {
                 selectedIcon: Icon(Icons.chat_bubble, color: Colors.white),
                 label: 'Chat',
               );
-            case NavigationSection.customization:
-              return const NavigationDestination(
-                icon: Icon(Icons.palette_outlined),
-                selectedIcon: Icon(Icons.palette, color: Colors.white),
-                label: 'Personalizar',
-              );
             case NavigationSection.statistics:
               return const NavigationDestination(
                 icon: Icon(Icons.bar_chart_outlined),

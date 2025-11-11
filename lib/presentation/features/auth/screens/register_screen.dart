@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:xpressatec/presentation/features/auth/controllers/auth_controller.dart';
+import 'package:xpressatec/presentation/shared/widgets/xpressatec_header_appbar.dart';
 
 class RegisterScreen extends GetView<AuthController> {
   const RegisterScreen({super.key});
@@ -23,14 +23,7 @@ class RegisterScreen extends GetView<AuthController> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Get.back(),
-        ),
-      ),
+      appBar: const XpressatecHeaderAppBar(showBack: true),
       body: SafeArea(
         // Use LayoutBuilder to create a responsive layout
         child: LayoutBuilder(
@@ -84,11 +77,6 @@ class RegisterScreen extends GetView<AuthController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Icon
-            SvgPicture.asset(
-              "assets/images/app_logo.svg",
-              height: 120, // Adjusted for a more balanced look
-            ),
             const SizedBox(height: 24),
 
             // Title
@@ -306,101 +294,103 @@ class RegisterScreen extends GetView<AuthController> {
 
             // Conditional Fields based on Role
             Obx(() {
-              // Fecha de Nacimiento for Paciente and Tutor
-              if (controller.selectedRole.value == 'Paciente' ||
-                  controller.selectedRole.value == 'Tutor') {
-                return Column(
-                  children: [
-                    TextFormField(
-                      controller: fechaNacimientoController,
-                      readOnly: true,
-                      decoration: InputDecoration(
-                        labelText: 'Fecha de nacimiento',
-                        hintText: 'dd/mm/aaaa',
-                        prefixIcon: const Icon(Icons.calendar_today_outlined),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.blue, width: 2),
-                        ),
-                      ),
-                      onTap: () async {
-                        final DateTime? picked = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime(2000),
-                          firstDate: DateTime(1920),
-                          lastDate: DateTime.now(),
-                          builder: (context, child) {
-                            return Theme(
-                              data: Theme.of(context).copyWith(
-                                colorScheme: ColorScheme.light(
-                                  primary: Colors.blue.shade700,
-                                ),
-                              ),
-                              child: child!,
+              final role = controller.selectedRole.value;
+              final requiresBirthDate =
+                  role == 'Paciente' || role == 'Tutor' || role == 'Terapeuta';
+              final showCedula = role == 'Terapeuta';
+
+              return Column(
+                children: [
+                  if (requiresBirthDate)
+                    Column(
+                      children: [
+                        TextFormField(
+                          controller: fechaNacimientoController,
+                          readOnly: true,
+                          decoration: InputDecoration(
+                            labelText: 'Fecha de nacimiento',
+                            hintText: 'dd/mm/aaaa',
+                            prefixIcon: const Icon(Icons.calendar_today_outlined),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.blue, width: 2),
+                            ),
+                          ),
+                          onTap: () async {
+                            final DateTime? picked = await showDatePicker(
+                              context: context,
+                              initialDate: DateTime(2000),
+                              firstDate: DateTime(1920),
+                              lastDate: DateTime.now(),
+                              builder: (context, child) {
+                                return Theme(
+                                  data: Theme.of(context).copyWith(
+                                    colorScheme: ColorScheme.light(
+                                      primary: Colors.blue.shade700,
+                                    ),
+                                  ),
+                                  child: child!,
+                                );
+                              },
                             );
+                            if (picked != null) {
+                              onDateSelected(picked);
+                              fechaNacimientoController.text =
+                                  '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+                            }
                           },
-                        );
-                        if (picked != null) {
-                          onDateSelected(picked);
-                          fechaNacimientoController.text =
-                          '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
-                        }
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor selecciona tu fecha de nacimiento';
-                        }
-                        return null;
-                      },
+                          validator: (value) {
+                            if (requiresBirthDate &&
+                                (value == null || value.isEmpty)) {
+                              return 'Por favor selecciona tu fecha de nacimiento';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                  ],
-                );
-              }
-
-              // Cédula for Terapeuta
-              if (controller.selectedRole.value == 'Terapeuta') {
-                return Column(
-                  children: [
-                    TextFormField(
-                      controller: cedulaController,
-                      keyboardType: TextInputType.text,
-                      decoration: InputDecoration(
-                        labelText: 'Cédula profesional',
-                        hintText: '1234567',
-                        prefixIcon: const Icon(Icons.badge_outlined),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  if (showCedula)
+                    Column(
+                      children: [
+                        TextFormField(
+                          controller: cedulaController,
+                          keyboardType: TextInputType.text,
+                          decoration: InputDecoration(
+                            labelText: 'Cédula profesional',
+                            hintText: '1234567',
+                            prefixIcon: const Icon(Icons.badge_outlined),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.blue, width: 2),
+                            ),
+                          ),
+                          validator: (value) {
+                            if (showCedula && (value == null || value.isEmpty)) {
+                              return 'Por favor ingresa tu cédula profesional';
+                            }
+                            return null;
+                          },
                         ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.blue, width: 2),
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor ingresa tu cédula profesional';
-                        }
-                        return null;
-                      },
+                        const SizedBox(height: 16),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                  ],
-                );
-              }
-
-              return const SizedBox.shrink();
+                ],
+              );
             }),
 
             const SizedBox(height: 8),
@@ -429,13 +419,20 @@ class RegisterScreen extends GetView<AuthController> {
                     }
                   }
 
+                  final selectedRole = controller.selectedRole.value;
+                  final requiresBirthDate = selectedRole == 'Paciente' ||
+                      selectedRole == 'Tutor' ||
+                      selectedRole == 'Terapeuta';
+
                   controller.register(
                     nombre: nombreController.text.trim(),
                     email: emailController.text.trim(),
                     password: passwordController.text,
-                    rol: controller.selectedRole.value,
-                    fechaNacimiento: formattedDate,
-                    cedula: cedulaController.text.trim().isNotEmpty
+                    rol: selectedRole,
+                    fechaNacimiento:
+                        requiresBirthDate ? formattedDate : null,
+                    cedula: selectedRole == 'Terapeuta' &&
+                            cedulaController.text.trim().isNotEmpty
                         ? cedulaController.text.trim()
                         : null,
                   );

@@ -1,46 +1,56 @@
+import 'package:animated_tree_view/animated_tree_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:animated_tree_view/animated_tree_view.dart';
 import 'package:xpressatec/core/constants/app_constants.dart';
 import 'package:xpressatec/presentation/features/customization/controllers/customization_controller.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/category_mapper.dart';
+import '../../settings/widgets/settings_detail_layout.dart';
 
 class CustomizationScreen extends GetView<CustomizationController> {
   const CustomizationScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Obx(() {
-        final refreshKey = controller.treeRefreshToken.value;
-        return FutureBuilder<TreeNode<CategoryData>>(
-          key: ValueKey(refreshKey),
-          future: _loadCategories(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-            }
+    final colorScheme = Theme.of(context).colorScheme;
 
-            if (snapshot.hasError) {
-              return Center(
-                child: Text('Error: ${snapshot.error}'),
-              );
-            }
+    return SettingsDetailLayout(
+      title: 'Personalización',
+      subtitle: 'Gestiona tus pictogramas locales y categorías.',
+      expandChild: true,
+      child: Container(
+        width: double.infinity,
+        decoration: SettingsDetailLayout.cardDecoration(colorScheme),
+        padding: const EdgeInsets.all(16),
+        child: Obx(() {
+          final refreshKey = controller.treeRefreshToken.value;
+          return FutureBuilder<TreeNode<CategoryData>>(
+            key: ValueKey(refreshKey),
+            future: _loadCategories(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
 
-            if (!snapshot.hasData || snapshot.data!.children.isEmpty) {
-              return const Center(
-                child: Text('No hay categorías disponibles'),
-              );
-            }
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text('Error: ${snapshot.error}'),
+                );
+              }
 
-            return _buildTreeView(context, snapshot.data!);
-          },
-        );
-      }),
+              if (!snapshot.hasData || snapshot.data!.children.isEmpty) {
+                return const Center(
+                  child: Text('No hay categorías disponibles'),
+                );
+              }
+
+              return _buildTreeView(context, snapshot.data!);
+            },
+          );
+        }),
+      ),
     );
   }
 
