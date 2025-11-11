@@ -5,16 +5,20 @@ import '../../data/datasources/remote/api_auth_datasource.dart';
 import '../../data/datasources/remote/firebase_storage_datasource.dart';
 import '../../data/datasources/remote/firestore_datasource.dart'; // 🆕 ADD
 import '../../data/datasources/remote/media_api_datasource.dart';
+import '../../data/datasources/remote/tutor_link_api_datasource.dart';
 import '../../data/datasources/local/audio_package_manager.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../data/repositories/phrase_repository_impl.dart'; // 🆕 ADD
+import '../../data/repositories/tutor_link_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/repositories/phrase_repository.dart'; // 🆕 ADD
+import '../../domain/repositories/tutor_link_repository.dart';
 import '../../domain/usecases/auth/get_current_user_usecase.dart';
 import '../../domain/usecases/auth/get_patient_qr_usecase.dart';
 import '../../domain/usecases/auth/login_usecase.dart';
 import '../../domain/usecases/auth/logout_usecase.dart';
 import '../../domain/usecases/auth/register_usecase.dart';
+import '../../domain/usecases/tutor/link_tutor_with_patient_usecase.dart';
 import '../../domain/usecases/phrase/save_phrase_usecase.dart'; // 🆕 ADD
 import '../../domain/usecases/phrase/get_user_phrases_usecase.dart'; // 🆕 ADD
 import '../../presentation/features/auth/controllers/auth_controller.dart';
@@ -44,6 +48,11 @@ class InitialBinding extends Bindings {
     // Firebase Auth datasource
     Get.put<ApiAuthDatasource>(
       ApiAuthDatasourceImpl(),
+      permanent: true,
+    );
+
+    Get.put<TutorLinkApiDatasource>(
+      TutorLinkApiDatasourceImpl(),
       permanent: true,
     );
 
@@ -94,6 +103,13 @@ class InitialBinding extends Bindings {
       permanent: true,
     );
 
+    Get.put<TutorLinkRepository>(
+      TutorLinkRepositoryImpl(
+        datasource: Get.find<TutorLinkApiDatasource>(),
+      ),
+      permanent: true,
+    );
+
     // Auth Use Cases
     Get.put<LoginUseCase>(
       LoginUseCase(repository: Get.find<AuthRepository>()),
@@ -117,6 +133,13 @@ class InitialBinding extends Bindings {
 
     Get.put<GetPatientQrUseCase>(
       GetPatientQrUseCase(repository: Get.find<AuthRepository>()),
+      permanent: true,
+    );
+
+    Get.put<LinkTutorWithPatientUseCase>(
+      LinkTutorWithPatientUseCase(
+        repository: Get.find<TutorLinkRepository>(),
+      ),
       permanent: true,
     );
 
