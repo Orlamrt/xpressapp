@@ -199,7 +199,7 @@ class _TherapistCard extends StatelessWidget {
     addChip(
         Icons.alternate_email_rounded, 'Red social',
         contacto['RedSocial'] as String?);
-    addChip(Icons.whatsapp, 'WhatsApp', contacto['WhatsApp'] as String?);
+    addChip(Icons.telegram, 'WhatsApp', contacto['WhatsApp'] as String?);
 
     return contactChips;
   }
