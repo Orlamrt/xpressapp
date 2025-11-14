@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'package:xpressatec/data/models/terapeuta_marketplace.dart';
+
 class MarketplaceApiException implements Exception {
   MarketplaceApiException(this.statusCode, this.message);
 
@@ -17,6 +19,70 @@ class MarketplaceApiDatasource {
       : _client = client ?? http.Client();
 
   final http.Client _client;
+  static const String _base = 'https://xpressatec.online';
+
+  Future<List<TerapeutaMarketplace>> fetchPublicTerapeutas({
+    String? sector,
+    String? especialidad,
+    String? search,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final Uri uri = Uri.parse('$_base/marketplace/public/terapeutas').replace(
+      queryParameters: <String, String>{
+        if (sector != null && sector.isNotEmpty) 'sector': sector,
+        if (especialidad != null && especialidad.isNotEmpty)
+          'especialidad': especialidad,
+        if (search != null && search.isNotEmpty) 'search': search,
+        'limit': '$limit',
+        'offset': '$offset',
+      },
+    );
+
+    final http.Response response = await _client.get(
+      uri,
+      headers: const {'Content-Type': 'application/json'},
+    );
+
+    Map<String, dynamic>? decoded;
+    if (response.body.isNotEmpty) {
+      try {
+        final dynamic json = jsonDecode(response.body);
+        if (json is Map<String, dynamic>) {
+          decoded = json;
+        }
+      } catch (_) {
+        decoded = null;
+      }
+    }
+
+    if (response.statusCode != 200) {
+      final String? message = decoded != null && decoded['message'] is String
+          ? decoded!['message'] as String
+          : 'Error al comunicarse con el servicio (código ${response.statusCode}).';
+      throw MarketplaceApiException(response.statusCode, message);
+    }
+
+    if (decoded == null || decoded['success'] != true) {
+      final String? message = decoded != null && decoded['message'] is String
+          ? decoded['message'] as String
+          : 'No fue posible obtener la información de terapeutas.';
+      throw MarketplaceApiException(response.statusCode, message);
+    }
+
+    final dynamic data = decoded['data'];
+    if (data is! List) {
+      throw MarketplaceApiException(
+        response.statusCode,
+        'La respuesta del servicio no contiene la lista de terapeutas.',
+      );
+    }
+
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map(TerapeutaMarketplace.fromJson)
+        .toList();
+  }
 
   Future<Map<String, dynamic>> upsertTutorProfile({
     required String email,
