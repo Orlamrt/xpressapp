@@ -300,61 +300,12 @@ class _TherapistListTile extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _ContactChipData {
-  const _ContactChipData({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-}
-
-class _ContactChip extends StatelessWidget {
-  const _ContactChip({
-    required this.data,
-    required this.colorScheme,
-    required this.theme,
-  });
-
-  final _ContactChipData data;
-  final ColorScheme colorScheme;
-  final ThemeData theme;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: colorScheme.primary.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(data.icon, size: 16, color: colorScheme.primary),
-          const SizedBox(width: 6),
-          Text(
-            '${data.label}: ',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: colorScheme.primary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          Text(
-            data.value,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: colorScheme.onSurface.withOpacity(0.8),
-            ),
-          ),
-        ],
+        onTap: () {
+          Get.toNamed(
+            Routes.therapistDetail,
+            arguments: terapeuta,
+          );
+        },
       ),
     );
   }
