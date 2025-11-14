@@ -19,7 +19,10 @@ class CommunicationTherapistMarketplaceScreen
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final Color backgroundTint = colorScheme.primary.withOpacity(0.05);
+    final Color backgroundTint = Color.alphaBlend(
+      colorScheme.primary.withOpacity(0.04),
+      colorScheme.surface,
+    );
 
     return Scaffold(
       backgroundColor: backgroundTint,
@@ -103,38 +106,51 @@ class _SearchField extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return TextField(
-      controller: controller,
-      onChanged: onChanged,
-      style: theme.textTheme.bodyLarge?.copyWith(
-        color: colorScheme.onSurface,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.primary.withOpacity(0.12),
+            blurRadius: 26,
+            offset: const Offset(0, 12),
+          ),
+        ],
       ),
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: colorScheme.surface,
-        hintText: 'Buscar por nombre, ciudad o especialidad',
-        hintStyle: theme.textTheme.bodyLarge?.copyWith(
-          color: colorScheme.onSurface.withOpacity(0.5),
+      child: TextField(
+        controller: controller,
+        onChanged: onChanged,
+        style: theme.textTheme.bodyLarge?.copyWith(
+          color: colorScheme.onSurface,
         ),
-        prefixIcon: Icon(Icons.search, color: colorScheme.primary),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(32),
-          borderSide: BorderSide(
-            color: colorScheme.primary.withOpacity(0.15),
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: colorScheme.surface,
+          hintText: 'Buscar por nombre, ciudad o especialidad',
+          hintStyle: theme.textTheme.bodyLarge?.copyWith(
+            color: colorScheme.onSurface.withOpacity(0.45),
           ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(32),
-          borderSide: BorderSide(
-            color: colorScheme.primary.withOpacity(0.15),
+          prefixIcon: Icon(Icons.search_rounded, color: colorScheme.primary),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(28),
+            borderSide: BorderSide(
+              color: colorScheme.primary.withOpacity(0.14),
+            ),
           ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(32),
-          borderSide: BorderSide(
-            color: colorScheme.primary.withOpacity(0.35),
-            width: 1.6,
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(28),
+            borderSide: BorderSide(
+              color: colorScheme.primary.withOpacity(0.08),
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(28),
+            borderSide: BorderSide(
+              color: colorScheme.primary.withOpacity(0.35),
+              width: 1.6,
+            ),
           ),
         ),
       ),
@@ -176,10 +192,13 @@ class _TherapistCard extends StatelessWidget {
       );
     }
 
-    addChip(Icons.phone_outlined, 'Teléfono', contacto['Telefono'] as String?);
-    addChip(Icons.smartphone_outlined, 'Celular', contacto['Celular'] as String?);
-    addChip(Icons.email_outlined, 'Correo', contacto['Correo'] as String?);
-    addChip(Icons.alternate_email, 'Red social', contacto['RedSocial'] as String?);
+    addChip(
+        Icons.phone_outlined, 'Teléfono', contacto['Telefono'] as String?);
+    addChip(
+        Icons.smartphone_outlined, 'Celular', contacto['Celular'] as String?);
+    addChip(
+        Icons.alternate_email_rounded, 'Red social',
+        contacto['RedSocial'] as String?);
     addChip(Icons.whatsapp, 'WhatsApp', contacto['WhatsApp'] as String?);
 
     return contactChips;
@@ -211,17 +230,17 @@ class _TherapistCard extends StatelessWidget {
             gradient: LinearGradient(
               colors: [
                 colorScheme.surface,
-                colorScheme.surfaceVariant.withOpacity(0.45),
+                colorScheme.primary.withOpacity(0.08),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: colorScheme.primary.withOpacity(0.08)),
+            border: Border.all(color: colorScheme.primary.withOpacity(0.12)),
             boxShadow: [
               BoxShadow(
                 color: colorScheme.primary.withOpacity(0.08),
-                blurRadius: 30,
+                blurRadius: 32,
                 offset: const Offset(0, 18),
               ),
             ],
@@ -235,7 +254,7 @@ class _TherapistCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _AvatarBadge(colorScheme: colorScheme, name: terapeuta.nombre),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 18),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,13 +263,13 @@ class _TherapistCard extends StatelessWidget {
                             terapeuta.nombre,
                             style: theme.textTheme.titleLarge?.copyWith(
                               color: colorScheme.onSurface,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                           const SizedBox(height: 6),
                           Text(
                             especialidad,
-                            style: theme.textTheme.bodyLarge?.copyWith(
+                            style: theme.textTheme.titleMedium?.copyWith(
                               color: colorScheme.primary,
                               fontWeight: FontWeight.w600,
                             ),
@@ -267,32 +286,50 @@ class _TherapistCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 20),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
+                Row(
                   children: [
-                    _InfoPill(
-                      icon: Icons.badge_outlined,
-                      label: 'Cédula',
-                      value: terapeuta.cedulaProfesional,
-                    ),
-                    _InfoPill(
-                      icon: Icons.mail_outline,
-                      label: 'Correo principal',
-                      value: terapeuta.email,
+                    Icon(Icons.mail_outline, color: colorScheme.primary),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        terapeuta.email,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface.withOpacity(0.85),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
                   ],
                 ),
                 if (contactChips.isNotEmpty) ...[
                   const SizedBox(height: 18),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: contactChips
-                        .map((chip) => _ContactChip(data: chip))
-                        .toList(),
-                  ),
+                  _ContactChipsRow(chips: contactChips),
                 ],
+                const SizedBox(height: 20),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () {
+                      Get.toNamed(
+                        Routes.therapistDetail,
+                        arguments: terapeuta,
+                      );
+                    },
+                    icon: Icon(Icons.chevron_right_rounded,
+                        color: colorScheme.primary),
+                    label: Text(
+                      'Ver perfil',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      foregroundColor: colorScheme.primary,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -318,38 +355,45 @@ class _AvatarBadge extends StatelessWidget {
         : 'TX';
 
     return Container(
-      width: 64,
-      height: 64,
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(
           colors: [
-            colorScheme.primary.withOpacity(0.35),
-            colorScheme.secondary.withOpacity(0.2),
+            colorScheme.primary,
+            colorScheme.primaryContainer,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.primary.withOpacity(0.14),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
       ),
-      child: Center(
-        child: Text(
-          initials,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.bold,
-              ) ??
-              TextStyle(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
+      child: Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.primary.withOpacity(0.12),
+              blurRadius: 18,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            initials,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w800,
+                ) ??
+                TextStyle(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 20,
+                ),
+          ),
         ),
       ),
     );
@@ -374,9 +418,9 @@ class _SectorBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: colorScheme.secondary.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.secondary.withOpacity(0.2)),
+        color: colorScheme.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: colorScheme.primary.withOpacity(0.14)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -384,14 +428,14 @@ class _SectorBadge extends StatelessWidget {
           Text(
             label,
             style: theme.textTheme.labelLarge?.copyWith(
-              color: colorScheme.secondary,
+              color: colorScheme.primary,
               fontWeight: FontWeight.w700,
             ),
           ),
           Text(
             code,
             style: theme.textTheme.labelSmall?.copyWith(
-              color: colorScheme.secondary.withOpacity(0.7),
+              color: colorScheme.primary.withOpacity(0.7),
               letterSpacing: 1,
             ),
           ),
@@ -401,61 +445,17 @@ class _SectorBadge extends StatelessWidget {
   }
 }
 
-class _InfoPill extends StatelessWidget {
-  const _InfoPill({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
+class _ContactChipsRow extends StatelessWidget {
+  const _ContactChipsRow({required this.chips});
 
-  final IconData icon;
-  final String label;
-  final String value;
+  final List<_ContactChipData> chips;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: colorScheme.surface.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
-      ),
-      constraints: const BoxConstraints(minWidth: 120, maxWidth: 240),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 20, color: colorScheme.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurface.withOpacity(0.6),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: chips.map((chip) => _ContactChip(data: chip)).toList(),
     );
   }
 }
@@ -471,39 +471,27 @@ class _ContactChip extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: colorScheme.secondary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.secondary.withOpacity(0.18)),
+        color: colorScheme.primary.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: colorScheme.primary.withOpacity(0.12)),
       ),
-      constraints: const BoxConstraints(minWidth: 140, maxWidth: 220),
+      constraints: const BoxConstraints(minWidth: 120, maxWidth: 220),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(data.icon, size: 20, color: colorScheme.secondary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  data.label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.secondary.withOpacity(0.8),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  data.value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-              ],
+          Icon(data.icon, size: 18, color: colorScheme.primary),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              '${data.label} · ${data.value}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
