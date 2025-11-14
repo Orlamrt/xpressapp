@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:xpressatec/core/config/routes.dart';
 import 'package:xpressatec/presentation/features/auth/controllers/auth_controller.dart';
+import 'package:xpressatec/presentation/features/therapists/screens/communication_therapist_marketplace_screen.dart';
 import 'package:xpressatec/presentation/features/therapists/screens/tutor_profile_upload_screen.dart';
 
 import 'drawer_action_card.dart';
@@ -123,8 +124,7 @@ class CustomDrawer extends StatelessWidget {
 
             if (userRole != 'Terapeuta') {
               return const SizedBox.shrink();
-            }
-
+            } 
             return Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: DrawerActionCard(
@@ -132,6 +132,25 @@ class CustomDrawer extends StatelessWidget {
                 title: 'Subir información',
                 subtitle: 'Actualiza tu perfil profesional en el marketplace',
                 onTap: () => Get.to(() => const TutorProfileUploadScreen()),
+              ),
+            ); 
+          }),
+
+          Obx((){
+            final String userRole =
+                authController.currentUser.value?.rol ??
+                    authController.userRole.value;
+
+            if (userRole != 'Tutor') {
+              return const SizedBox.shrink();
+            } 
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: DrawerActionCard(
+                leadingIcon: Icons.store_mall_directory,
+                title: 'Marketplace',
+                subtitle: 'Explora el marketplace de terapeutas',
+                onTap: () => Get.toNamed(Routes.communicationTherapists),
               ),
             );
           }),
