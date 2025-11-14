@@ -18,6 +18,8 @@ class MarketplaceApiDatasource {
 
   final http.Client _client;
 
+  static const String _baseUrl = 'https://xpressatec.online';
+
   Future<Map<String, dynamic>> upsertTutorProfile({
     required String email,
     required String cedula,
@@ -30,7 +32,7 @@ class MarketplaceApiDatasource {
     String? whatsapp,
     String? token,
   }) async {
-    final Uri uri = Uri.parse('$_base/marketplace/terapeuta/profile');
+    final Uri uri = Uri.parse('$_baseUrl/marketplace/terapeuta/profile');
 
     final Map<String, String> headers = <String, String>{
       'Content-Type': 'application/json',
@@ -108,7 +110,7 @@ class MarketplaceApiDatasource {
 
   @Deprecated('Usa upsertTutorProfile en su lugar')
   Future<void> upsertProfile(Map<String, dynamic> payload) async {
-    final Uri uri = Uri.parse('$_base/marketplace/terapeuta/profile');
+    final Uri uri = Uri.parse('$_baseUrl/marketplace/terapeuta/profile');
     final http.Response res = await _client.post(
       uri,
       headers: const {'Content-Type': 'application/json'},
