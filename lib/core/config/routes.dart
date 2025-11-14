@@ -1,6 +1,8 @@
 import 'package:get/get_navigation/src/routes/get_route.dart';
 import 'package:xpressatec/core/bindings/auth_binding.dart';
 import 'package:xpressatec/core/bindings/home_binding.dart';
+import 'package:xpressatec/presentation/features/chat/screens/chat_screen.dart';
+import 'package:xpressatec/presentation/features/chat/screens/new_chat_screen.dart';
 import 'package:xpressatec/presentation/features/auth/screens/login_screen.dart';
 import 'package:xpressatec/presentation/features/calendar/screens/tutor_calendar_screen.dart';
 import 'package:xpressatec/presentation/features/home/screens/home_screen.dart';
@@ -41,6 +43,8 @@ class Routes {
   static const String communicationTherapists = '/communication-therapists';
   static const String therapistDetail = '/marketplace/therapist-detail';
   static const String tutorProfileUpload = '/tutor-profile-upload';
+  static const String chatDetail = '/chat/detail';
+  static const String newChat = '/chat/new';
   // static const String audioTesting = '/audio-testing';
 }
 
@@ -112,6 +116,14 @@ class AppRoutes {
     GetPage(
       name: Routes.downloadPictograms,
       page: () => const DownloadPictogramsScreen(),
+    ),
+    GetPage(
+      name: Routes.chatDetail,
+      page: () => const ChatScreen(showRecipientSelector: false),
+    ),
+    GetPage(
+      name: Routes.newChat,
+      page: () => const NewChatScreen(),
     ),
 
     // GetPage(
