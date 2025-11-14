@@ -1,185 +1,352 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:xpressatec/core/config/routes.dart';
-import 'package:xpressatec/data/datasources/local/mock_chat_data.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:xpressatec/presentation/features/auth/controllers/auth_controller.dart';
-import 'package:xpressatec/presentation/features/home/controllers/navigation_controller.dart';
 
 class ChatMessage {
-  final String id;
+  final String from;
+  final String to;
   final String text;
-  final String userId;
-  final String userName;
   final DateTime timestamp;
-  final bool isMe;
+  final bool isSelf;
 
   ChatMessage({
-    required this.id,
+    required this.from,
+    required this.to,
     required this.text,
-    required this.userId,
-    required this.userName,
     required this.timestamp,
-    required this.isMe,
+    required this.isSelf,
   });
 }
 
 class ChatController extends GetxController {
-  // Observable state
+  static const _chatUrl = 'wss://xpressatec.online/ws/chat';
+
   final RxList<ChatMessage> messages = <ChatMessage>[].obs;
-  final RxBool isLoading = false.obs;
-  final RxString currentUserId = ''.obs;
-  final RxString currentUserName = ''.obs;
-  final RxString otherUserName = ''.obs;
+  final RxBool isConnecting = false.obs;
+  final RxBool isConnected = false.obs;
+  final RxString connectionError = ''.obs;
+  final RxString currentRecipientEmail = ''.obs;
+
+  final TextEditingController messageController = TextEditingController();
+  final TextEditingController recipientEmailController = TextEditingController();
 
   late final AuthController _authController;
+  WebSocketChannel? _channel;
+  StreamSubscription? _channelSubscription;
+  Worker? _emailWorker;
+
+  String _userEmail = '';
+  bool _manuallyClosed = false;
+
+  String get userEmail => _userEmail;
 
   @override
   void onInit() {
     super.onInit();
     _authController = Get.find<AuthController>();
 
-    if (!_authController.canAccessChat) {
-      Future.delayed(Duration.zero, () {
-        Get.snackbar(
-          'Acceso restringido',
-          'El chat no está disponible para tu rol actual.',
-          snackPosition: SnackPosition.BOTTOM,
-        );
+    _emailWorker = ever<String>(_authController.userEmail, (value) {
+      final trimmed = value.trim();
+      if (trimmed.isNotEmpty && trimmed != _userEmail) {
+        _initializeConnection();
+      }
+    });
 
-        if (Get.currentRoute == Routes.home) {
-          if (Get.isRegistered<NavigationController>()) {
-            Get.find<NavigationController>().changePage(0);
-          }
-        } else {
-          if (Get.key.currentState?.canPop() ?? false) {
-            Get.back();
-          } else {
-            Get.offAllNamed(Routes.home);
-          }
-        }
-      });
+    _initializeConnection();
+  }
+
+  @override
+  void onClose() {
+    _manuallyClosed = true;
+    _emailWorker?.dispose();
+    _closeChannel();
+    messageController.dispose();
+    recipientEmailController.dispose();
+    super.onClose();
+  }
+
+  void _initializeConnection() {
+    if (isConnecting.value) {
       return;
     }
 
-    _initializeChat();
-  }
+    final emailFromState = _authController.userEmail.value.trim();
+    final fallbackEmail = _authController.currentUser.value?.email ?? '';
+    final email = emailFromState.isNotEmpty ? emailFromState : fallbackEmail.trim();
 
-  /// Initialize chat with mock data
-  void _initializeChat() {
+    if (email.isEmpty) {
+      connectionError.value = 'No se pudo obtener el correo del usuario.';
+      isConnected.value = false;
+      return;
+    }
+
+    _userEmail = email;
+    _manuallyClosed = false;
+    connectionError.value = '';
+    isConnecting.value = true;
+
+    _closeChannel();
+
+    final uri = Uri.parse('$_chatUrl?email=${Uri.encodeComponent(email)}');
+
     try {
-      isLoading.value = true;
-
-      // Get current user from AuthController
-      final user = _authController.currentUser.value;
-
-      if (user == null) {
-        print('❌ No user found');
-        return;
-      }
-
-      currentUserId.value = user.uuid;
-      currentUserName.value = user.nombre;
-
-      // Get partner info
-      final partnerInfo = MockChatData.getPartnerInfo(user.uuid);
-      otherUserName.value = partnerInfo['name']!;
-
-      // Load mock messages
-      _loadMessages();
+      _channel = WebSocketChannel.connect(uri);
+      _listenToChannel();
+      isConnected.value = true;
     } catch (e) {
-      print('❌ Error initializing chat: $e');
+      isConnected.value = false;
+      connectionError.value = e.toString();
+      Get.snackbar(
+        'Error de conexión',
+        'No se pudo conectar al chat. Intenta nuevamente.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
-      isLoading.value = false;
+      isConnecting.value = false;
     }
   }
 
-  /// Load messages from mock data
-  void _loadMessages() {
-    final mockMessages = MockChatData.getAllMessages();
-
-    messages.value = mockMessages.map((msgData) {
-      final isMe = msgData['userId'] == currentUserId.value;
-
-      return ChatMessage(
-        id: msgData['id'],
-        text: msgData['text'],
-        userId: msgData['userId'],
-        userName: msgData['userName'],
-        timestamp: DateTime.parse(msgData['timestamp']),
-        isMe: isMe,
-      );
-    }).toList();
-
-    // Sort by date (oldest first)
-    messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-    print('✅ Loaded ${messages.length} messages');
+  void reconnect() {
+    _initializeConnection();
   }
 
-  /// Send a new message
-  void sendMessage(String text) {
-    if (text.trim().isEmpty) return;
+  void _listenToChannel() {
+    _channelSubscription?.cancel();
 
-    final newMessage = ChatMessage(
-      id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
-      text: text.trim(),
-      userId: currentUserId.value,
-      userName: currentUserName.value,
-      timestamp: DateTime.now(),
-      isMe: true,
+    if (_channel == null) {
+      return;
+    }
+
+    _channelSubscription = _channel!.stream.listen(
+      _handleSocketMessage,
+      onDone: _handleSocketClosed,
+      onError: _handleSocketError,
+      cancelOnError: true,
     );
+  }
 
-    // Add to mock data
-    MockChatData.addMessage({
-      "id": newMessage.id,
-      "text": newMessage.text,
-      "userId": newMessage.userId,
-      "userName": newMessage.userName,
-      "timestamp": newMessage.timestamp.toIso8601String(),
-    });
+  void _handleSocketMessage(dynamic data) {
+    if (data == null) {
+      return;
+    }
 
-    // Add to UI
-    messages.add(newMessage);
+    Map<String, dynamic>? payload;
 
-    print('📤 Message sent: ${newMessage.text}');
+    try {
+      if (data is String) {
+        payload = jsonDecode(data) as Map<String, dynamic>;
+      } else if (data is List<int>) {
+        payload = jsonDecode(utf8.decode(data)) as Map<String, dynamic>;
+      }
+    } catch (_) {
+      return;
+    }
 
-    // Simulate therapist auto-reply (for demo)
-    if (currentUserId.value == MockChatData.patientId) {
-      _simulateTherapistReply();
+    if (payload == null) {
+      return;
+    }
+
+    final type = (payload['type'] ?? 'message').toString();
+
+    switch (type) {
+      case 'connected':
+        isConnected.value = true;
+        connectionError.value = '';
+        break;
+      case 'message':
+        final text = payload['message']?.toString() ?? '';
+        if (text.isEmpty) {
+          return;
+        }
+
+        final from = payload['from']?.toString() ?? '';
+        final to = payload['to']?.toString() ?? '';
+        final isSelf = payload['isSelf'] is bool
+            ? payload['isSelf'] as bool
+            : from.toLowerCase() == _userEmail.toLowerCase();
+        final timestamp = _parseTimestamp(payload['timestamp']);
+
+        final chatMessage = ChatMessage(
+          from: from,
+          to: to,
+          text: text,
+          timestamp: timestamp,
+          isSelf: isSelf,
+        );
+
+        _addMessage(chatMessage);
+        break;
+      case 'error':
+      case 'info':
+        final infoMessage = payload['message']?.toString();
+        if (infoMessage != null && infoMessage.isNotEmpty) {
+          Get.snackbar(
+            type == 'error' ? 'Error' : 'Información',
+            infoMessage,
+            snackPosition: SnackPosition.BOTTOM,
+          );
+        }
+        break;
+      default:
+        break;
     }
   }
 
-  /// Simulate therapist auto-reply
-  void _simulateTherapistReply() {
+  void _handleSocketClosed() {
+    isConnected.value = false;
+    if (_manuallyClosed) {
+      return;
+    }
+
     Future.delayed(const Duration(seconds: 2), () {
-      final replies = [
-        "Gracias por tu mensaje. Te responderé pronto.",
-        "Entendido. Sigue practicando.",
-        "¡Muy bien! Continúa así.",
-        "Excelente progreso.",
-        "Me alegra saber de ti.",
-      ];
+      if (!_manuallyClosed) {
+        _initializeConnection();
+      }
+    });
+  }
 
-      final randomReply = replies[DateTime.now().second % replies.length];
-      final partnerInfo = MockChatData.getPartnerInfo(currentUserId.value);
+  void _handleSocketError(Object error) {
+    connectionError.value = error.toString();
+    isConnected.value = false;
 
-      final autoMessage = ChatMessage(
-        id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
-        text: randomReply,
-        userId: partnerInfo['id']!,
-        userName: partnerInfo['name']!,
-        timestamp: DateTime.now(),
-        isMe: false,
+    if (!_manuallyClosed) {
+      Get.snackbar(
+        'Error de conexión',
+        'Se perdió la conexión con el chat. Reintentando...',
+        snackPosition: SnackPosition.BOTTOM,
       );
 
-      MockChatData.addMessage({
-        "id": autoMessage.id,
-        "text": autoMessage.text,
-        "userId": autoMessage.userId,
-        "userName": autoMessage.userName,
-        "timestamp": autoMessage.timestamp.toIso8601String(),
+      Future.delayed(const Duration(seconds: 2), () {
+        if (!_manuallyClosed) {
+          _initializeConnection();
+        }
       });
+    }
+  }
 
-      messages.add(autoMessage);
-    });
+  void setRecipientEmail(String email) {
+    final trimmed = email.trim();
+
+    if (trimmed.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Ingresa un correo para el destinatario.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    if (!GetUtils.isEmail(trimmed)) {
+      Get.snackbar(
+        'Error',
+        'Ingresa un correo válido.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    currentRecipientEmail.value = trimmed;
+    recipientEmailController.text = trimmed;
+  }
+
+  Future<void> sendMessage() async {
+    final to = currentRecipientEmail.value.trim();
+    final text = messageController.text.trim();
+
+    if (to.isEmpty) {
+      Get.snackbar(
+        'Destinatario requerido',
+        'Selecciona o ingresa el correo del destinatario antes de enviar.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    if (!GetUtils.isEmail(to)) {
+      Get.snackbar(
+        'Error',
+        'El correo del destinatario no es válido.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    if (text.isEmpty) {
+      return;
+    }
+
+    final channel = _channel;
+    if (channel == null || !isConnected.value) {
+      Get.snackbar(
+        'Sin conexión',
+        'No hay conexión activa con el chat. Intenta reconectar.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    final payload = {
+      'to': to,
+      'message': text,
+    };
+
+    try {
+      channel.sink.add(jsonEncode(payload));
+      messageController.clear();
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'No se pudo enviar el mensaje. Inténtalo nuevamente.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  List<ChatMessage> get visibleMessages {
+    final recipient = currentRecipientEmail.value.trim().toLowerCase();
+
+    if (recipient.isEmpty) {
+      return List<ChatMessage>.from(messages);
+    }
+
+    final me = _userEmail.toLowerCase();
+
+    return messages.where((message) {
+      final from = message.from.toLowerCase();
+      final to = message.to.toLowerCase();
+      final involvesRecipient = from == recipient || to == recipient;
+      final involvesMe = from == me || to == me;
+      return involvesRecipient && involvesMe;
+    }).toList();
+  }
+
+  DateTime _parseTimestamp(dynamic raw) {
+    if (raw is String && raw.isNotEmpty) {
+      final parsed = DateTime.tryParse(raw);
+      if (parsed != null) {
+        return parsed.toLocal();
+      }
+    }
+
+    return DateTime.now();
+  }
+
+  void _addMessage(ChatMessage message) {
+    messages.add(message);
+    messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+  }
+
+  void _closeChannel() {
+    _channelSubscription?.cancel();
+    _channelSubscription = null;
+
+    _channel?.sink.close();
+    _channel = null;
+
+    isConnected.value = false;
   }
 }

@@ -11,26 +11,36 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  Worker? _messagesWorker;
+
+  @override
+  void initState() {
+    super.initState();
+    final controller = Get.find<ChatController>();
+    _messagesWorker = ever<List<ChatMessage>>(controller.messages, (_) {
+      _scrollToBottom();
+    });
+  }
 
   @override
   void dispose() {
-    _textController.dispose();
+    _messagesWorker?.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
   void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      });
-    }
+    if (!_scrollController.hasClients) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   @override
@@ -38,131 +48,191 @@ class _ChatScreenState extends State<ChatScreen> {
     final controller = Get.find<ChatController>();
 
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: Obx(() => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: const Text('Chat en tiempo real'),
+      ),
+      body: SafeArea(
+        child: Column(
           children: [
-            Text(
-              controller.otherUserName.value,
-              style: const TextStyle(fontSize: 18),
-            ),
-            const Text(
-              'Terapeuta',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
-            ),
-          ],
-        )),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            onPressed: () {
-              Get.dialog(
-                AlertDialog(
-                  title: const Text('💬 Modo Demo'),
-                  content: const Text(
-                    'Este es un chat de demostración con datos estáticos.\n\n'
-                        '✨ Características:\n'
-                        '• 14 mensajes pre-cargados\n'
-                        '• Respuestas automáticas simuladas\n'
-                        '• Almacenamiento en memoria\n\n'
-                        '🚀 La implementación real se conectará a Firebase.',
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Get.back(),
-                      child: const Text('Entendido'),
+            _RecipientSelector(controller: controller),
+            _ConnectionStatusBanner(controller: controller),
+            Expanded(
+              child: Obx(() {
+                final visibleMessages = controller.visibleMessages;
+
+                if (controller.isConnecting.value && visibleMessages.isEmpty) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (visibleMessages.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Text(
+                        'No hay mensajes todavía. Selecciona un destinatario e inicia la conversación.',
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                  ],
-                ),
-              );
-            },
+                  );
+                }
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  itemCount: visibleMessages.length,
+                  itemBuilder: (context, index) {
+                    final message = visibleMessages[index];
+                    return _MessageBubble(message: message);
+                  },
+                );
+              }),
+            ),
+            _MessageInput(controller: controller),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RecipientSelector extends StatelessWidget {
+  final ChatController controller;
+
+  const _RecipientSelector({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: controller.recipientEmailController,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.done,
+            decoration: InputDecoration(
+              labelText: 'Correo del terapeuta (destinatario)',
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.check_circle_outline),
+                onPressed: () => controller
+                    .setRecipientEmail(controller.recipientEmailController.text),
+              ),
+            ),
+            onSubmitted: controller.setRecipientEmail,
+          ),
+          const SizedBox(height: 8),
+          Obx(() {
+            final recipient = controller.currentRecipientEmail.value;
+            final text = recipient.isEmpty
+                ? 'Ningún destinatario seleccionado'
+                : 'Conversación con: $recipient';
+
+            return Text(
+              text,
+              style: Theme.of(context).textTheme.bodySmall,
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConnectionStatusBanner extends StatelessWidget {
+  final ChatController controller;
+
+  const _ConnectionStatusBanner({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      if (controller.isConnected.value) {
+        return const SizedBox.shrink();
+      }
+
+      final isConnecting = controller.isConnecting.value;
+      final message = isConnecting
+          ? 'Conectando con el chat...'
+          : 'Desconectado. Reintentando conexión...';
+
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        color: Colors.orange.withOpacity(0.15),
+        child: Row(
+          children: [
+            const Icon(Icons.wifi_off, color: Colors.orange),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.orange[800],
+                    ),
+              ),
+            ),
+            if (!isConnecting)
+              TextButton(
+                onPressed: controller.reconnect,
+                child: const Text('Reintentar'),
+              ),
+          ],
+        ),
+      );
+    });
+  }
+}
+
+class _MessageInput extends StatelessWidget {
+  final ChatController controller;
+
+  const _MessageInput({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
-      body: Obx(() {
-        if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        // Scroll to bottom when messages change
-        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-
-        return Column(
-          children: [
-            // Messages List
-            Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(16),
-                itemCount: controller.messages.length,
-                itemBuilder: (context, index) {
-                  final message = controller.messages[index];
-                  return _MessageBubble(message: message);
-                },
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller.messageController,
+              textInputAction: TextInputAction.send,
+              decoration: InputDecoration(
+                hintText: 'Escribe un mensaje...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
+                fillColor: Colors.grey[200],
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
               ),
+              onSubmitted: (_) => controller.sendMessage(),
             ),
-
-            // Input Area
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _textController,
-                      decoration: InputDecoration(
-                        hintText: 'Escribe un mensaje...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(25),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[200],
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
-                        ),
-                      ),
-                      onSubmitted: (text) {
-                        if (text.trim().isNotEmpty) {
-                          controller.sendMessage(text);
-                          _textController.clear();
-                        }
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  CircleAvatar(
-                    backgroundColor: Colors.blue,
-                    child: IconButton(
-                      icon: const Icon(Icons.send, color: Colors.white, size: 20),
-                      onPressed: () {
-                        final text = _textController.text;
-                        if (text.trim().isNotEmpty) {
-                          controller.sendMessage(text);
-                          _textController.clear();
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
+          ),
+          const SizedBox(width: 10),
+          CircleAvatar(
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            child: IconButton(
+              icon: const Icon(Icons.send, color: Colors.white),
+              onPressed: controller.sendMessage,
             ),
-          ],
-        );
-      }),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -175,40 +245,38 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final timeFormat = DateFormat('HH:mm');
+    final isSelf = message.isSelf;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         mainAxisAlignment:
-        message.isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+            isSelf ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar (for other user)
-          if (!message.isMe) ...[
+          if (!isSelf) ...[
             CircleAvatar(
-              backgroundColor: Colors.green,
               radius: 16,
+              backgroundColor: Colors.green,
               child: Text(
-                message.userName.substring(0, 1).toUpperCase(),
-                style: const TextStyle(color: Colors.white, fontSize: 14),
+                message.from.isNotEmpty
+                    ? message.from.substring(0, 1).toUpperCase()
+                    : '?',
+                style: const TextStyle(color: Colors.white),
               ),
             ),
             const SizedBox(width: 8),
           ],
-
-          // Message Bubble
           Flexible(
             child: Column(
-              crossAxisAlignment: message.isMe
-                  ? CrossAxisAlignment.end
-                  : CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  isSelf ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
-                // User name (for other user)
-                if (!message.isMe)
+                if (!isSelf)
                   Padding(
-                    padding: const EdgeInsets.only(left: 12, bottom: 4),
+                    padding: const EdgeInsets.only(left: 8, bottom: 4),
                     child: Text(
-                      message.userName,
+                      message.from,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
@@ -216,15 +284,13 @@ class _MessageBubble extends StatelessWidget {
                       ),
                     ),
                   ),
-
-                // Message container
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
-                    color: message.isMe ? Colors.blue : Colors.grey[300],
+                    color: isSelf
+                        ? Theme.of(context).colorScheme.primary
+                        : Colors.grey[300],
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Column(
@@ -234,7 +300,7 @@ class _MessageBubble extends StatelessWidget {
                         message.text,
                         style: TextStyle(
                           fontSize: 16,
-                          color: message.isMe ? Colors.white : Colors.black87,
+                          color: isSelf ? Colors.white : Colors.black87,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -242,7 +308,7 @@ class _MessageBubble extends StatelessWidget {
                         timeFormat.format(message.timestamp),
                         style: TextStyle(
                           fontSize: 11,
-                          color: message.isMe
+                          color: isSelf
                               ? Colors.white.withOpacity(0.7)
                               : Colors.black54,
                         ),
@@ -253,16 +319,16 @@ class _MessageBubble extends StatelessWidget {
               ],
             ),
           ),
-
-          // Avatar (for current user)
-          if (message.isMe) ...[
+          if (isSelf) ...[
             const SizedBox(width: 8),
             CircleAvatar(
-              backgroundColor: Colors.blue,
               radius: 16,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               child: Text(
-                message.userName.substring(0, 1).toUpperCase(),
-                style: const TextStyle(color: Colors.white, fontSize: 14),
+                message.from.isNotEmpty
+                    ? message.from.substring(0, 1).toUpperCase()
+                    : '?',
+                style: const TextStyle(color: Colors.white),
               ),
             ),
           ],
