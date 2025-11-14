@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:xpressatec/core/config/routes.dart';
 import 'package:xpressatec/data/models/terapeuta_marketplace.dart';
 
 import '../controllers/communication_therapist_controller.dart';
@@ -223,7 +224,10 @@ class _TherapistListTile extends StatelessWidget {
           ),
         ),
         onTap: () {
-          // TODO: Integrar navegación o contacto cuando el detalle esté disponible.
+          Get.toNamed(
+            Routes.therapistDetail,
+            arguments: terapeuta,
+          );
         },
       ),
     );
