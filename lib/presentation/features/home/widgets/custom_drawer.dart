@@ -117,24 +117,6 @@ class CustomDrawer extends StatelessWidget {
             );
           }),
           Obx(() {
-            if (!authController.isTutor) {
-              return const SizedBox.shrink();
-            }
-
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: DrawerActionCard(
-                leadingIcon: Icons.storefront,
-                title: 'Marketplace',
-                subtitle: 'Buscar terapeutas',
-                onTap: () {
-                  Navigator.of(context).pop();
-                  Get.toNamed(Routes.communicationTherapists);
-                },
-              ),
-            );
-          }),
-          Obx(() {
             final String userRole =
                 authController.currentUser.value?.rol ??
                     authController.userRole.value;
