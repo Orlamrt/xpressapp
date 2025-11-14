@@ -35,7 +35,7 @@ class TherapistDetailScreen extends StatelessWidget {
     addIfValid('Celular', Icons.smartphone_outlined, contacto['Celular'] as String?);
     addIfValid('Red social', Icons.alternate_email_rounded,
         contacto['RedSocial'] as String?);
-    addIfValid('WhatsApp', Icons.whatsapp, contacto['WhatsApp'] as String?);
+    addIfValid('WhatsApp', Icons.telegram, contacto['WhatsApp'] as String?);
 
     return contactInfo;
   }
