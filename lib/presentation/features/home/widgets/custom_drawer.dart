@@ -121,25 +121,6 @@ class CustomDrawer extends StatelessWidget {
                 authController.currentUser.value?.rol ??
                     authController.userRole.value;
 
-            if (userRole != 'Tutor') {
-              return const SizedBox.shrink();
-            }
-
-            return ListTile(
-              leading: const Icon(Icons.storefront),
-              title: const Text('Marketplace'),
-              subtitle: const Text('Buscar terapeutas'),
-              onTap: () {
-                Navigator.of(context).pop();
-                Get.toNamed(Routes.communicationTherapists);
-              },
-            );
-          }),
-          Obx(() {
-            final String userRole =
-                authController.currentUser.value?.rol ??
-                    authController.userRole.value;
-
             if (userRole != 'Terapeuta') {
               return const SizedBox.shrink();
             }
