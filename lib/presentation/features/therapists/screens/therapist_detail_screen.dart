@@ -33,9 +33,9 @@ class TherapistDetailScreen extends StatelessWidget {
 
     addIfValid('Teléfono', Icons.phone_outlined, contacto['Telefono'] as String?);
     addIfValid('Celular', Icons.smartphone_outlined, contacto['Celular'] as String?);
-    addIfValid('Correo', Icons.email_outlined, contacto['Correo'] as String?);
-    addIfValid('Red social', Icons.alternate_email, contacto['RedSocial'] as String?);
-    addIfValid('WhatsApp', Icons.chat_outlined, contacto['WhatsApp'] as String?);
+    addIfValid('Red social', Icons.alternate_email_rounded,
+        contacto['RedSocial'] as String?);
+    addIfValid('WhatsApp', Icons.whatsapp, contacto['WhatsApp'] as String?);
 
     return contactInfo;
   }
@@ -47,7 +47,10 @@ class TherapistDetailScreen extends StatelessWidget {
         arguments is TerapeutaMarketplace ? arguments : null;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final Color backgroundTint = colorScheme.primary.withOpacity(0.05);
+    final Color backgroundTint = Color.alphaBlend(
+      colorScheme.primary.withOpacity(0.04),
+      colorScheme.surface,
+    );
 
     if (terapeuta == null) {
       return Scaffold(
@@ -67,8 +70,15 @@ class TherapistDetailScreen extends StatelessWidget {
         (terapeuta.especialidad?.trim().isNotEmpty ?? false)
             ? terapeuta.especialidad!.trim()
             : 'Sin especialidad';
-    final List<_ContactInfo> contactItems =
-        _buildContactInfo(terapeuta.contacto);
+    final String sectorLabel = _sectorLabel(terapeuta.tipoSector);
+    final List<_ContactInfo> contactItems = [
+      _ContactInfo(
+        label: 'Correo principal',
+        value: terapeuta.email,
+        icon: Icons.mail_outline,
+      ),
+      ..._buildContactInfo(terapeuta.contacto),
+    ];
 
     return Scaffold(
       backgroundColor: backgroundTint,
@@ -79,75 +89,13 @@ class TherapistDetailScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _TherapistHeroCard(
+              _ProfileOverviewCard(
                 terapeuta: terapeuta,
                 especialidad: especialidad,
-                sectorLabel: _sectorLabel(terapeuta.tipoSector),
+                sectorLabel: sectorLabel,
               ),
               const SizedBox(height: 28),
-              const _SectionTitle('Información profesional'),
-              const SizedBox(height: 16),
-              _ElevatedContainer(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _DetailTile(
-                        icon: Icons.badge_outlined,
-                        label: 'Cédula profesional',
-                        value: terapeuta.cedulaProfesional,
-                      ),
-                      const SizedBox(height: 12),
-                      _DetailTile(
-                        icon: Icons.workspace_premium_outlined,
-                        label: 'Especialidad',
-                        value: especialidad,
-                      ),
-                      const SizedBox(height: 12),
-                      _DetailTile(
-                        icon: Icons.apartment_outlined,
-                        label: 'Sector',
-                        value: _sectorLabel(terapeuta.tipoSector),
-                      ),
-                      const SizedBox(height: 12),
-                      _DetailTile(
-                        icon: Icons.mail_outline,
-                        label: 'Correo principal',
-                        value: terapeuta.email,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 28),
-              const _SectionTitle('Datos de contacto'),
-              const SizedBox(height: 16),
-              if (contactItems.isEmpty)
-                _ElevatedContainer(
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                    child: Text(
-                      'No hay información de contacto adicional disponible.',
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: colorScheme.onSurface.withOpacity(0.7),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                )
-              else
-                Column(
-                  children: contactItems
-                      .map(
-                        (item) => Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: _ContactTile(info: item),
-                        ),
-                      )
-                      .toList(),
-                ),
+              _ContactSectionCard(contactItems: contactItems),
             ],
           ),
         ),
@@ -156,8 +104,8 @@ class TherapistDetailScreen extends StatelessWidget {
   }
 }
 
-class _TherapistHeroCard extends StatelessWidget {
-  const _TherapistHeroCard({
+class _ProfileOverviewCard extends StatelessWidget {
+  const _ProfileOverviewCard({
     required this.terapeuta,
     required this.especialidad,
     required this.sectorLabel,
@@ -187,16 +135,17 @@ class _TherapistHeroCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            colorScheme.primary.withOpacity(0.3),
-            colorScheme.secondary.withOpacity(0.18),
+            colorScheme.surface,
+            colorScheme.primary.withOpacity(0.08),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: colorScheme.primary.withOpacity(0.12)),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.primary.withOpacity(0.12),
+            color: colorScheme.primary.withOpacity(0.1),
             blurRadius: 36,
             offset: const Offset(0, 20),
           ),
@@ -208,31 +157,8 @@ class _TherapistHeroCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: colorScheme.surface.withOpacity(0.9),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.primary.withOpacity(0.16),
-                      blurRadius: 24,
-                      offset: const Offset(0, 12),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    initials,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 20),
+              _GradientAvatar(initials: initials),
+              const SizedBox(width: 24),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -240,43 +166,42 @@ class _TherapistHeroCard extends StatelessWidget {
                     Text(
                       terapeuta.nombre,
                       style: theme.textTheme.headlineSmall?.copyWith(
-                        color: colorScheme.onSurface,
-                        fontWeight: FontWeight.w800,
-                      ),
+                            color: colorScheme.onSurface,
+                            fontWeight: FontWeight.w800,
+                          ) ??
+                          TextStyle(
+                            color: colorScheme.onSurface,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 24,
+                          ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       especialidad,
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: colorScheme.onSurface.withOpacity(0.85),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _HeroBadge(
-                      icon: Icons.apartment_outlined,
-                      label: 'Sector',
-                      value: sectorLabel,
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ) ??
+                          TextStyle(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 18,
+                          ),
                     ),
                   ],
                 ),
               ),
+              _DetailSectorBadge(
+                label: sectorLabel,
+                code: terapeuta.tipoSector,
+              ),
             ],
           ),
-          const SizedBox(height: 20),
-          Text(
-            'Contacto principal',
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: colorScheme.onSurface.withOpacity(0.8),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            terapeuta.email,
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: colorScheme.onSurface,
-              fontWeight: FontWeight.w600,
-            ),
+          const SizedBox(height: 24),
+          _InfoRow(
+            icon: Icons.badge_outlined,
+            label: 'Cédula profesional',
+            value: terapeuta.cedulaProfesional,
           ),
         ],
       ),
@@ -284,16 +209,70 @@ class _TherapistHeroCard extends StatelessWidget {
   }
 }
 
-class _HeroBadge extends StatelessWidget {
-  const _HeroBadge({
-    required this.icon,
+class _GradientAvatar extends StatelessWidget {
+  const _GradientAvatar({required this.initials});
+
+  final String initials;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: [
+            colorScheme.primary,
+            colorScheme.primaryContainer,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Container(
+        width: 96,
+        height: 96,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.primary.withOpacity(0.12),
+              blurRadius: 26,
+              offset: const Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            initials,
+            style: theme.textTheme.headlineMedium?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w800,
+                ) ??
+                TextStyle(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 28,
+                ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailSectorBadge extends StatelessWidget {
+  const _DetailSectorBadge({
     required this.label,
-    required this.value,
+    required this.code,
   });
 
-  final IconData icon;
   final String label;
-  final String value;
+  final String code;
 
   @override
   Widget build(BuildContext context) {
@@ -303,33 +282,36 @@ class _HeroBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: colorScheme.surface.withOpacity(0.85),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.primary.withOpacity(0.15)),
+        color: colorScheme.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: colorScheme.primary.withOpacity(0.14)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Icon(icon, size: 20, color: colorScheme.primary),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurface.withOpacity(0.7),
-                  fontWeight: FontWeight.w600,
+          Text(
+            label,
+            style: theme.textTheme.labelLarge?.copyWith(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                ) ??
+                TextStyle(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
                 ),
-              ),
-              Text(
-                value,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
+          ),
+          Text(
+            code,
+            style: theme.textTheme.labelSmall?.copyWith(
+                  color: colorScheme.primary.withOpacity(0.7),
+                  letterSpacing: 1.1,
+                ) ??
+                TextStyle(
+                  color: colorScheme.primary.withOpacity(0.7),
+                  letterSpacing: 1.1,
+                  fontSize: 12,
                 ),
-              ),
-            ],
           ),
         ],
       ),
@@ -337,55 +319,96 @@ class _HeroBadge extends StatelessWidget {
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text);
+class _ContactSectionCard extends StatelessWidget {
+  const _ContactSectionCard({required this.contactItems});
 
-  final String text;
+  final List<_ContactInfo> contactItems;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Text(
-      text,
-      style: theme.textTheme.titleLarge?.copyWith(
-        color: colorScheme.onSurface,
-        fontWeight: FontWeight.w700,
-      ),
-    );
-  }
-}
-
-class _ElevatedContainer extends StatelessWidget {
-  const _ElevatedContainer({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: colorScheme.primary.withOpacity(0.08)),
+        border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
         boxShadow: [
           BoxShadow(
             color: colorScheme.primary.withOpacity(0.08),
-            blurRadius: 30,
+            blurRadius: 28,
             offset: const Offset(0, 18),
           ),
         ],
       ),
-      child: child,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: contactItems.isEmpty
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Datos de contacto',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                        ) ??
+                        TextStyle(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 22,
+                        ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No hay información de contacto adicional disponible.',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                          color: colorScheme.onSurface.withOpacity(0.7),
+                        ) ??
+                        TextStyle(
+                          color: colorScheme.onSurface.withOpacity(0.7),
+                          fontSize: 16,
+                        ),
+                  ),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Datos de contacto',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                        ) ??
+                        TextStyle(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 22,
+                        ),
+                  ),
+                  const SizedBox(height: 20),
+                  ...List.generate(contactItems.length, (index) {
+                    final item = contactItems[index];
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: index == contactItems.length - 1 ? 0 : 18),
+                      child: _InfoRow(
+                        icon: item.icon,
+                        label: item.label,
+                        value: item.value,
+                      ),
+                    );
+                  }),
+                ],
+              ),
+      ),
     );
   }
 }
 
-class _DetailTile extends StatelessWidget {
-  const _DetailTile({
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
     required this.icon,
     required this.label,
     required this.value,
@@ -404,15 +427,15 @@ class _DetailTile extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 40,
-          height: 40,
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(
             color: colorScheme.primary.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(18),
           ),
           child: Icon(icon, color: colorScheme.primary, size: 22),
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -420,76 +443,32 @@ class _DetailTile extends StatelessWidget {
               Text(
                 label,
                 style: theme.textTheme.labelMedium?.copyWith(
-                  color: colorScheme.onSurface.withOpacity(0.7),
-                  fontWeight: FontWeight.w600,
-                ),
+                      color: colorScheme.onSurface.withOpacity(0.7),
+                      fontWeight: FontWeight.w600,
+                    ) ??
+                    TextStyle(
+                      color: colorScheme.onSurface.withOpacity(0.7),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
               ),
               const SizedBox(height: 4),
               Text(
                 value,
                 style: theme.textTheme.bodyLarge?.copyWith(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                ),
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ) ??
+                    TextStyle(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
               ),
             ],
           ),
         ),
       ],
-    );
-  }
-}
-
-class _ContactTile extends StatelessWidget {
-  const _ContactTile({required this.info});
-
-  final _ContactInfo info;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return _ElevatedContainer(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        child: Row(
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: colorScheme.primary.withOpacity(0.12),
-              ),
-              child: Icon(info.icon, color: colorScheme.primary),
-            ),
-            const SizedBox(width: 18),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    info.label,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.7),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    info.value,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
