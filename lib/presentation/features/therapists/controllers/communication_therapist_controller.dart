@@ -1,76 +1,88 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../models/communication_therapist.dart';
+import 'package:xpressatec/data/datasources/marketplace_api_datasource.dart';
+import 'package:xpressatec/data/models/terapeuta_marketplace.dart';
 
 class CommunicationTherapistController extends GetxController {
-  CommunicationTherapistController();
+  CommunicationTherapistController({required this.datasource});
 
-  /// TODO: Replace this mock list with data provided by a
-  /// [TherapistRepository] once the backend is available.
-  final RxList<CommunicationTherapist> therapists = <CommunicationTherapist>[
-    CommunicationTherapist(
-      nombre: 'Laura Fernández',
-      especialidad: 'Terapia de Lenguaje Infantil',
-      anosExperiencia: 8,
-      modalidad: 'Online',
-      ubicacion: 'Ciudad de México',
-      rating: 4.8,
-      tags: const ['Autismo', 'Infantil', 'TEACCH'],
-    ),
-    CommunicationTherapist(
-      nombre: 'Miguel Torres',
-      especialidad: 'Comunicación Aumentativa y Alternativa',
-      anosExperiencia: 12,
-      modalidad: 'Híbrido',
-      ubicacion: 'Guadalajara',
-      rating: 4.6,
-      tags: const ['CAA', 'Adultos', 'Tecnología Asistiva'],
-    ),
-    CommunicationTherapist(
-      nombre: 'Ana Beltrán',
-      especialidad: 'Rehabilitación del Habla',
-      anosExperiencia: 6,
-      modalidad: 'Presencial',
-      ubicacion: 'Monterrey',
-      rating: 4.9,
-      tags: const ['Neurológico', 'Adultos'],
-    ),
-    CommunicationTherapist(
-      nombre: 'Paola Jiménez',
-      especialidad: 'Lenguaje y Comunicación Temprana',
-      anosExperiencia: 5,
-      modalidad: 'Online',
-      ubicacion: 'Puebla',
-      rating: 4.7,
-      tags: const ['Infantil', 'Intervención Temprana'],
-    ),
-  ].obs;
+  final MarketplaceApiDatasource datasource;
 
-  final RxList<CommunicationTherapist> filteredTherapists =
-      <CommunicationTherapist>[].obs;
-
+  final RxList<TerapeutaMarketplace> terapeutas = <TerapeutaMarketplace>[].obs;
+  final RxBool isLoading = false.obs;
   final RxString searchQuery = ''.obs;
+  final RxString selectedSector = ''.obs;
+  final TextEditingController searchCtrl = TextEditingController();
+  final TextEditingController especialidadCtrl = TextEditingController();
+
+  late final Worker _searchWorker;
 
   @override
   void onInit() {
     super.onInit();
-    filteredTherapists.assignAll(therapists);
+    _searchWorker = debounce<String>(
+      searchQuery,
+      (_) => loadTerapeutas(),
+      time: const Duration(milliseconds: 400),
+    );
+    loadTerapeutas();
   }
 
-  void filterTherapists(String query) {
-    searchQuery.value = query;
-    if (query.isEmpty) {
-      filteredTherapists.assignAll(therapists);
-      return;
-    }
+  @override
+  void onClose() {
+    _searchWorker.dispose();
+    searchCtrl.dispose();
+    especialidadCtrl.dispose();
+    super.onClose();
+  }
 
-    final lowerQuery = query.toLowerCase();
-    filteredTherapists.assignAll(
-      therapists.where(
-        (therapist) => therapist.nombre.toLowerCase().contains(lowerQuery) ||
-            therapist.especialidad.toLowerCase().contains(lowerQuery) ||
-            therapist.ubicacion.toLowerCase().contains(lowerQuery),
-      ),
-    );
+  void onSearchChanged(String value) {
+    searchQuery.value = value;
+  }
+
+  void onSectorChanged(String value) {
+    selectedSector.value = value;
+    loadTerapeutas();
+  }
+
+  Future<void> loadTerapeutas({bool resetOffset = true}) async {
+    isLoading.value = true;
+    try {
+      final List<TerapeutaMarketplace> results =
+          await datasource.fetchPublicTerapeutas(
+        sector: selectedSector.value.isEmpty ? null : selectedSector.value,
+        especialidad: especialidadCtrl.text.trim().isEmpty
+            ? null
+            : especialidadCtrl.text.trim(),
+        search:
+            searchQuery.value.trim().isEmpty ? null : searchQuery.value.trim(),
+        limit: 50,
+        offset: resetOffset ? 0 : terapeutas.length,
+      );
+
+      if (resetOffset) {
+        terapeutas.assignAll(results);
+      } else {
+        terapeutas.addAll(results);
+      }
+    } catch (error) {
+      terapeutas.clear();
+      final String message;
+      if (error is MarketplaceApiException) {
+        message = error.message ?? 'Ocurrió un error inesperado.';
+      } else {
+        message = 'Ocurrió un error inesperado. Intenta nuevamente.';
+      }
+      if (!Get.isSnackbarOpen) {
+        Get.snackbar(
+          'Error',
+          message,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } finally {
+      isLoading.value = false;
+    }
   }
 }
