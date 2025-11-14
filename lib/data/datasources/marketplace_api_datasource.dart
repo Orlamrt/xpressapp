@@ -13,10 +13,10 @@ class MarketplaceApiException implements Exception {
 }
 
 class MarketplaceApiDatasource {
-  MarketplaceApiDatasource({http.Client? client}) : _client = client ?? http.Client();
+  MarketplaceApiDatasource({http.Client? client})
+      : _client = client ?? http.Client();
 
   final http.Client _client;
-  static const String _base = 'https://xpressatec.online';
 
   Future<Map<String, dynamic>> upsertTutorProfile({
     required String email,

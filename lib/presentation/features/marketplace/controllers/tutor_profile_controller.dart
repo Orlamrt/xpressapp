@@ -15,30 +15,30 @@ class TutorProfileController extends GetxController {
   final AuthController authController;
   final LocalStorage localStorage;
 
-  final formKey = GlobalKey<FormState>();
-  final isSaving = false.obs;
-  final selectedSector = 'PR'.obs;
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  final RxBool isSaving = false.obs;
+  final RxString selectedSector = 'PR'.obs;
 
-  final emailCtrl = TextEditingController();
-  final cedulaCtrl = TextEditingController();
-  final especialidadCtrl = TextEditingController();
-  final telCtrl = TextEditingController();
-  final celCtrl = TextEditingController();
-  final correoAltCtrl = TextEditingController();
-  final redSocialCtrl = TextEditingController();
-  final waCtrl = TextEditingController();
+  final TextEditingController emailCtrl = TextEditingController();
+  final TextEditingController cedulaCtrl = TextEditingController();
+  final TextEditingController especialidadCtrl = TextEditingController();
+  final TextEditingController telCtrl = TextEditingController();
+  final TextEditingController celCtrl = TextEditingController();
+  final TextEditingController correoAltCtrl = TextEditingController();
+  final TextEditingController redSocialCtrl = TextEditingController();
+  final TextEditingController waCtrl = TextEditingController();
 
   @override
   void onInit() {
     super.onInit();
-    _initializeEmail();
+    final String userEmail = _resolveUserEmail();
+    emailCtrl.text = userEmail;
   }
 
-  Future<void> _initializeEmail() async {
-    final String? email = _getEmailFromAuth();
-    if (email != null) {
-      emailCtrl.text = email;
-      return;
+  String _resolveUserEmail() {
+    final String reactiveEmail = authController.userEmail.value.trim();
+    if (reactiveEmail.isNotEmpty) {
+      return reactiveEmail;
     }
 
     final String? storedEmail = await _getEmailFromStorage();
@@ -84,7 +84,7 @@ class TutorProfileController extends GetxController {
     } catch (_) {
       // Ignored: fallback retrieval should not break initialization
     }
-    return null;
+    return '';
   }
 
   void changeSector(String sector) {
