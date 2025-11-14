@@ -6,92 +6,45 @@ import 'package:xpressatec/presentation/features/auth/controllers/auth_controlle
 
 class TutorProfileController extends GetxController {
   TutorProfileController({
-    MarketplaceApiDatasource? marketplaceApi,
-    AuthController? authController,
-    LocalStorage? localStorage,
-  })  : marketplaceApi = marketplaceApi ?? Get.find<MarketplaceApiDatasource>(),
-        authController = authController ?? Get.find<AuthController>(),
-        _localStorage = localStorage ?? (Get.isRegistered<LocalStorage>() ? Get.find<LocalStorage>() : null);
+    required this.datasource,
+    required this.authController,
+    required this.localStorage,
+  });
 
-  final MarketplaceApiDatasource marketplaceApi;
+  final MarketplaceApiDatasource datasource;
   final AuthController authController;
-  final LocalStorage? _localStorage;
+  final LocalStorage localStorage;
 
-  final formKey = GlobalKey<FormState>();
-  final isSaving = false.obs;
-  final selectedSector = 'PR'.obs;
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  final RxBool isSaving = false.obs;
+  final RxString selectedSector = 'PR'.obs;
 
-  final emailCtrl = TextEditingController();
-  final cedulaCtrl = TextEditingController();
-  final especialidadCtrl = TextEditingController();
-  final telCtrl = TextEditingController();
-  final celCtrl = TextEditingController();
-  final correoAltCtrl = TextEditingController();
-  final redSocialCtrl = TextEditingController();
-  final waCtrl = TextEditingController();
+  final TextEditingController emailCtrl = TextEditingController();
+  final TextEditingController cedulaCtrl = TextEditingController();
+  final TextEditingController especialidadCtrl = TextEditingController();
+  final TextEditingController telCtrl = TextEditingController();
+  final TextEditingController celCtrl = TextEditingController();
+  final TextEditingController correoAltCtrl = TextEditingController();
+  final TextEditingController redSocialCtrl = TextEditingController();
+  final TextEditingController waCtrl = TextEditingController();
 
   @override
   void onInit() {
     super.onInit();
-    _initializeEmail();
+    final String userEmail = _resolveUserEmail();
+    emailCtrl.text = userEmail;
   }
 
-  Future<void> _initializeEmail() async {
-    final String? email = _getEmailFromAuth();
-    if (email != null) {
-      emailCtrl.text = email;
-      return;
+  String _resolveUserEmail() {
+    final String reactiveEmail = authController.userEmail.value.trim();
+    if (reactiveEmail.isNotEmpty) {
+      return reactiveEmail;
     }
-
-    final String? storedEmail = await _getEmailFromStorage();
-    if (storedEmail != null) {
-      emailCtrl.text = storedEmail;
-      authController.userEmail.value = storedEmail;
+    final String? currentEmail = authController.currentUser.value?.email;
+    if (currentEmail != null && currentEmail.trim().isNotEmpty) {
+      return currentEmail.trim();
     }
-  }
-
-  String? _getEmailFromAuth() {
-    final String emailFromState = authController.userEmail.value.trim();
-    if (emailFromState.isNotEmpty) {
-      return emailFromState;
-    }
-
-    final String? emailFromUser = authController.currentUser.value?.email;
-    if (emailFromUser != null && emailFromUser.trim().isNotEmpty) {
-      final String normalized = emailFromUser.trim();
-      authController.userEmail.value = normalized;
-      return normalized;
-    }
-
-    return null;
-  }
-
-  Future<String?> _getEmailFromStorage() async {
-    final LocalStorage? storage = _localStorage;
-    if (storage == null) {
-      return null;
-    }
-
-    try {
-      final Map<String, dynamic>? storedUser = await storage.getUser();
-      if (storedUser == null) {
-        return null;
-      }
-
-      final dynamic emailCandidate = storedUser['email'] ??
-          storedUser['Email'] ??
-          storedUser['correo'] ??
-          storedUser['Correo'];
-      if (emailCandidate is String) {
-        final String normalized = emailCandidate.trim();
-        if (normalized.isNotEmpty) {
-          return normalized;
-        }
-      }
-    } catch (_) {
-      // Ignored: fallback retrieval should not break initialization
-    }
-    return null;
+    return '';
   }
 
   void changeSector(String sector) {
@@ -123,71 +76,36 @@ class TutorProfileController extends GetxController {
     if (isSaving.value) return;
     if (!(formKey.currentState?.validate() ?? false)) return;
 
-    final String email = emailCtrl.text.trim();
-    final String cedula = cedulaCtrl.text.trim();
-    if (email.isEmpty || cedula.isEmpty) {
-      Get.snackbar('Campos requeridos', 'Email y cédula profesional son obligatorios');
-      return;
-    }
-
     isSaving.value = true;
+    final String? token = localStorage.getToken();
+
     try {
-      final Map<String, dynamic> payload = {
-        'email': email,
-        'cedula_profesional': cedula,
-        'especialidad': _opt(especialidadCtrl.text),
-        'tipo_sector': selectedSector.value,
-        'contacto': _compact({
-          'Telefono': _opt(telCtrl.text),
-          'Celular': _opt(celCtrl.text),
-          'Correo': _opt(correoAltCtrl.text),
-          'RedSocial': _opt(redSocialCtrl.text),
-          'WhatsApp': _opt(waCtrl.text),
-        }),
-      };
+      final Map<String, dynamic> result = await datasource.upsertTutorProfile(
+        email: emailCtrl.text.trim(),
+        cedula: cedulaCtrl.text.trim(),
+        especialidad: especialidadCtrl.text.trim(),
+        tipoSector: selectedSector.value,
+        telefono: telCtrl.text,
+        celular: celCtrl.text,
+        correoAlternativo: correoAltCtrl.text,
+        redSocial: redSocialCtrl.text,
+        whatsapp: waCtrl.text,
+        token: token,
+      );
 
-      payload.removeWhere((key, value) => value == null || (value is Map && value.isEmpty));
-
-      await marketplaceApi.upsertProfile(payload);
-
-      Get.snackbar('Éxito', 'Perfil actualizado correctamente');
+      final String message = (result['message'] as String?) ??
+          'Perfil de terapeuta actualizado correctamente para el marketplace.';
+      Get.snackbar('Éxito', message);
     } on MarketplaceApiException catch (e) {
-      if (e.statusCode == 404) {
-        Get.snackbar('No encontrado', 'No existe un usuario con ese correo');
-      } else if (e.statusCode == 400) {
-        Get.snackbar('Datos inválidos', 'Faltan email y/o cédula profesional');
-      } else {
-        Get.snackbar('Error', e.message ?? 'Error de servidor');
-      }
+      final String backendMessage = (e.message ?? '').trim().isNotEmpty
+          ? e.message!.trim()
+          : 'Ocurrió un error al actualizar el perfil.';
+      Get.snackbar('Error', backendMessage);
     } catch (e) {
       Get.snackbar('Error', e.toString());
     } finally {
       isSaving.value = false;
     }
-  }
-
-  String? _opt(String? value) {
-    final String trimmed = (value ?? '').trim();
-    return trimmed.isEmpty ? null : trimmed;
-  }
-
-  Map<String, dynamic> _compact(Map<String, dynamic?> source) {
-    final Map<String, dynamic> result = <String, dynamic>{};
-    source.forEach((String key, dynamic value) {
-      if (value == null) {
-        return;
-      }
-      if (value is String) {
-        final String trimmed = value.trim();
-        if (trimmed.isEmpty) {
-          return;
-        }
-        result[key] = trimmed;
-      } else {
-        result[key] = value;
-      }
-    });
-    return result;
   }
 
   @override

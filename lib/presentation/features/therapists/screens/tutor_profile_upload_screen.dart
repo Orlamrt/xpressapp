@@ -66,12 +66,13 @@ class _TutorProfileUploadScreenState extends State<TutorProfileUploadScreen> {
                   _buildSectionTitle(context, 'Datos profesionales'),
                   const SizedBox(height: 12),
                   _buildRequiredField(
-                    label: 'Correo electrónico',
+                    label: 'Correo electrónico (usuario)',
                     controller: controller.emailCtrl,
                     readOnly: true,
                     keyboardType: TextInputType.emailAddress,
                     validator: controller.validateEmail,
-                    helperText: 'Este correo identifica tu perfil en el marketplace',
+                    helperText:
+                        'Este correo identifica tu perfil en el marketplace.',
                   ),
                   const SizedBox(height: 16),
                   _buildRequiredField(
@@ -79,19 +80,27 @@ class _TutorProfileUploadScreenState extends State<TutorProfileUploadScreen> {
                     controller: controller.cedulaCtrl,
                     textCapitalization: TextCapitalization.characters,
                     validator: controller.validateCedula,
+                    helperText:
+                        'Este dato se enviará como cédula_profesional al marketplace.',
                   ),
                   const SizedBox(height: 16),
                   _buildOptionalField(
-                    label: 'Especialidad',
+                    label: 'Especialidad (opcional)',
                     controller: controller.especialidadCtrl,
                     textCapitalization: TextCapitalization.sentences,
                   ),
                   const SizedBox(height: 24),
-                  _buildSectionTitle(context, 'Sector de servicio'),
+                  _buildSectionTitle(context, 'Sector de servicio (tipo_sector)'),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Selecciona el sector en el que das servicio. Se enviará como tipo_sector: PR (Privado), PU (Público), AM (Ambos).',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                   const SizedBox(height: 12),
                   _buildSectorSelector(context),
                   const SizedBox(height: 24),
-                  _buildSectionTitle(context, 'Contacto'),
+                  _buildSectionTitle(
+                      context, 'Contacto (se enviará como objeto "contacto")'),
                   const SizedBox(height: 12),
                   _buildOptionalField(
                     label: 'Teléfono',
