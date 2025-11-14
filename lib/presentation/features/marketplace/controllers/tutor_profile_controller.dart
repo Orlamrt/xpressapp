@@ -40,9 +40,49 @@ class TutorProfileController extends GetxController {
     if (reactiveEmail.isNotEmpty) {
       return reactiveEmail;
     }
-    final String? currentEmail = authController.currentUser.value?.email;
-    if (currentEmail != null && currentEmail.trim().isNotEmpty) {
-      return currentEmail.trim();
+
+    final String? storedEmail = await _getEmailFromStorage();
+    if (storedEmail != null) {
+      emailCtrl.text = storedEmail;
+      authController.userEmail.value = storedEmail;
+    }
+  }
+
+  String? _getEmailFromAuth() {
+    final String emailFromState = authController.userEmail.value.trim();
+    if (emailFromState.isNotEmpty) {
+      return emailFromState;
+    }
+
+    final String? emailFromUser = authController.currentUser.value?.email;
+    if (emailFromUser != null && emailFromUser.trim().isNotEmpty) {
+      final String normalized = emailFromUser.trim();
+      authController.userEmail.value = normalized;
+      return normalized;
+    }
+
+    return null;
+  }
+
+  Future<String?> _getEmailFromStorage() async {
+    try {
+      final Map<String, dynamic>? storedUser = await localStorage.getUser();
+      if (storedUser == null) {
+        return null;
+      }
+
+      final dynamic emailCandidate = storedUser['email'] ??
+          storedUser['Email'] ??
+          storedUser['correo'] ??
+          storedUser['Correo'];
+      if (emailCandidate is String) {
+        final String normalized = emailCandidate.trim();
+        if (normalized.isNotEmpty) {
+          return normalized;
+        }
+      }
+    } catch (_) {
+      // Ignored: fallback retrieval should not break initialization
     }
     return '';
   }
@@ -77,27 +117,25 @@ class TutorProfileController extends GetxController {
     if (!(formKey.currentState?.validate() ?? false)) return;
 
     isSaving.value = true;
-    final String? token = localStorage.getToken();
-
     try {
-      final Map<String, dynamic> result = await datasource.upsertTutorProfile(
+      final Map<String, dynamic> response = await datasource.upsertTutorProfile(
         email: emailCtrl.text.trim(),
         cedula: cedulaCtrl.text.trim(),
         especialidad: especialidadCtrl.text.trim(),
         tipoSector: selectedSector.value,
-        telefono: telCtrl.text,
-        celular: celCtrl.text,
-        correoAlternativo: correoAltCtrl.text,
-        redSocial: redSocialCtrl.text,
-        whatsapp: waCtrl.text,
-        token: token,
+        telefono: telCtrl.text.trim(),
+        celular: celCtrl.text.trim(),
+        correoAlternativo: correoAltCtrl.text.trim(),
+        redSocial: redSocialCtrl.text.trim(),
+        whatsapp: waCtrl.text.trim(),
+        token: localStorage.getToken(),
       );
 
-      final String message = (result['message'] as String?) ??
+      final String message = (response['message'] as String?) ??
           'Perfil de terapeuta actualizado correctamente para el marketplace.';
       Get.snackbar('Éxito', message);
     } on MarketplaceApiException catch (e) {
-      final String backendMessage = (e.message ?? '').trim().isNotEmpty
+      final String backendMessage = (e.message?.trim().isNotEmpty ?? false)
           ? e.message!.trim()
           : 'Ocurrió un error al actualizar el perfil.';
       Get.snackbar('Error', backendMessage);

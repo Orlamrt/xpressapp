@@ -22,7 +22,7 @@ class MarketplaceApiDatasource {
     required String email,
     required String cedula,
     String? especialidad,
-    required String tipoSector,
+    String? tipoSector,
     String? telefono,
     String? celular,
     String? correoAlternativo,
@@ -30,8 +30,12 @@ class MarketplaceApiDatasource {
     String? whatsapp,
     String? token,
   }) async {
-    final Uri url =
-        Uri.parse('https://xpressatec.online/marketplace/terapeuta/profile');
+    final Uri uri = Uri.parse('$_base/marketplace/terapeuta/profile');
+
+    final Map<String, String> headers = <String, String>{
+      'Content-Type': 'application/json',
+      if (token != null && token.trim().isNotEmpty) 'Authorization': 'Bearer ${token.trim()}',
+    };
 
     String? _normalize(String? value) {
       if (value == null) {
@@ -40,12 +44,6 @@ class MarketplaceApiDatasource {
       final String trimmed = value.trim();
       return trimmed.isEmpty ? null : trimmed;
     }
-
-    final Map<String, String> headers = <String, String>{
-      'Content-Type': 'application/json; charset=utf-8',
-      if (token != null && token.trim().isNotEmpty)
-        'Authorization': 'Bearer ${token.trim()}',
-    };
 
     final Map<String, String> contacto = <String, String>{};
     void addContacto(String key, String? value) {
@@ -64,25 +62,20 @@ class MarketplaceApiDatasource {
     final Map<String, dynamic> body = <String, dynamic>{
       'email': email.trim(),
       'cedula_profesional': cedula.trim(),
-      'tipo_sector': tipoSector.trim(),
+      'especialidad': _normalize(especialidad),
+      'tipo_sector': _normalize(tipoSector) ?? 'PR',
+      'contacto': contacto.isEmpty ? null : contacto,
     };
 
-    final String? normalizedEspecialidad = _normalize(especialidad);
-    if (normalizedEspecialidad != null) {
-      body['especialidad'] = normalizedEspecialidad;
-    }
-
-    if (contacto.isNotEmpty) {
-      body['contacto'] = contacto;
-    }
+    body.removeWhere((String key, dynamic value) => value == null);
 
     final http.Response response = await _client.post(
-      url,
+      uri,
       headers: headers,
       body: jsonEncode(body),
     );
 
-    Map<String, dynamic> decoded = <String, dynamic>{};
+    Map<String, dynamic>? decoded;
     if (response.body.isNotEmpty) {
       try {
         final dynamic json = jsonDecode(response.body);
@@ -90,35 +83,35 @@ class MarketplaceApiDatasource {
           decoded = json;
         }
       } catch (_) {
-        decoded = <String, dynamic>{};
+        decoded = null;
       }
     }
 
-    if (response.statusCode == 200) {
-      return <String, dynamic>{
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final Map<String, dynamic> result = <String, dynamic>{
         'success': true,
-        'message': decoded['message'] is String
-            ? decoded['message'] as String
+        'message': decoded != null && decoded['message'] is String
+            ? decoded!['message'] as String
             : 'Perfil de terapeuta actualizado correctamente para el marketplace.',
-        'data': decoded['data'] is Map<String, dynamic>
-            ? decoded['data'] as Map<String, dynamic>
-            : <String, dynamic>{},
+        'data': decoded != null && decoded['data'] is Map<String, dynamic>
+            ? decoded!['data'] as Map<String, dynamic>
+            : decoded,
       };
+      return result;
     }
 
-    final String errorMessage = decoded['message'] is String
+    final String? message = decoded != null && decoded['message'] is String
         ? decoded['message'] as String
         : 'Error al comunicarse con el servicio (código ${response.statusCode}).';
-    throw MarketplaceApiException(response.statusCode, errorMessage);
+    throw MarketplaceApiException(response.statusCode, message);
   }
 
   @Deprecated('Usa upsertTutorProfile en su lugar')
   Future<void> upsertProfile(Map<String, dynamic> payload) async {
-    final Uri url =
-        Uri.parse('https://xpressatec.online/marketplace/terapeuta/profile');
+    final Uri uri = Uri.parse('$_base/marketplace/terapeuta/profile');
     final http.Response res = await _client.post(
-      url,
-      headers: const {'Content-Type': 'application/json; charset=utf-8'},
+      uri,
+      headers: const {'Content-Type': 'application/json'},
       body: jsonEncode(payload),
     );
     if (res.statusCode != 200 && res.statusCode != 201) {
