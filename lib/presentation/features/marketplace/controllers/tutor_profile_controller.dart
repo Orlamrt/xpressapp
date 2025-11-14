@@ -6,16 +6,14 @@ import 'package:xpressatec/presentation/features/auth/controllers/auth_controlle
 
 class TutorProfileController extends GetxController {
   TutorProfileController({
-    MarketplaceApiDatasource? marketplaceApi,
-    AuthController? authController,
-    LocalStorage? localStorage,
-  })  : marketplaceApi = marketplaceApi ?? Get.find<MarketplaceApiDatasource>(),
-        authController = authController ?? Get.find<AuthController>(),
-        _localStorage = localStorage ?? (Get.isRegistered<LocalStorage>() ? Get.find<LocalStorage>() : null);
+    required this.datasource,
+    required this.authController,
+    required this.localStorage,
+  });
 
-  final MarketplaceApiDatasource marketplaceApi;
+  final MarketplaceApiDatasource datasource;
   final AuthController authController;
-  final LocalStorage? _localStorage;
+  final LocalStorage localStorage;
 
   final formKey = GlobalKey<FormState>();
   final isSaving = false.obs;
@@ -67,13 +65,8 @@ class TutorProfileController extends GetxController {
   }
 
   Future<String?> _getEmailFromStorage() async {
-    final LocalStorage? storage = _localStorage;
-    if (storage == null) {
-      return null;
-    }
-
     try {
-      final Map<String, dynamic>? storedUser = await storage.getUser();
+      final Map<String, dynamic>? storedUser = await localStorage.getUser();
       if (storedUser == null) {
         return null;
       }
@@ -123,71 +116,34 @@ class TutorProfileController extends GetxController {
     if (isSaving.value) return;
     if (!(formKey.currentState?.validate() ?? false)) return;
 
-    final String email = emailCtrl.text.trim();
-    final String cedula = cedulaCtrl.text.trim();
-    if (email.isEmpty || cedula.isEmpty) {
-      Get.snackbar('Campos requeridos', 'Email y cédula profesional son obligatorios');
-      return;
-    }
-
     isSaving.value = true;
     try {
-      final Map<String, dynamic> payload = {
-        'email': email,
-        'cedula_profesional': cedula,
-        'especialidad': _opt(especialidadCtrl.text),
-        'tipo_sector': selectedSector.value,
-        'contacto': _compact({
-          'Telefono': _opt(telCtrl.text),
-          'Celular': _opt(celCtrl.text),
-          'Correo': _opt(correoAltCtrl.text),
-          'RedSocial': _opt(redSocialCtrl.text),
-          'WhatsApp': _opt(waCtrl.text),
-        }),
-      };
+      final Map<String, dynamic> response = await datasource.upsertTutorProfile(
+        email: emailCtrl.text.trim(),
+        cedula: cedulaCtrl.text.trim(),
+        especialidad: especialidadCtrl.text.trim(),
+        tipoSector: selectedSector.value,
+        telefono: telCtrl.text.trim(),
+        celular: celCtrl.text.trim(),
+        correoAlternativo: correoAltCtrl.text.trim(),
+        redSocial: redSocialCtrl.text.trim(),
+        whatsapp: waCtrl.text.trim(),
+        token: localStorage.getToken(),
+      );
 
-      payload.removeWhere((key, value) => value == null || (value is Map && value.isEmpty));
-
-      await marketplaceApi.upsertProfile(payload);
-
-      Get.snackbar('Éxito', 'Perfil actualizado correctamente');
+      final String message = (response['message'] as String?) ??
+          'Perfil de terapeuta actualizado correctamente para el marketplace.';
+      Get.snackbar('Éxito', message);
     } on MarketplaceApiException catch (e) {
-      if (e.statusCode == 404) {
-        Get.snackbar('No encontrado', 'No existe un usuario con ese correo');
-      } else if (e.statusCode == 400) {
-        Get.snackbar('Datos inválidos', 'Faltan email y/o cédula profesional');
-      } else {
-        Get.snackbar('Error', e.message ?? 'Error de servidor');
-      }
+      final String backendMessage = (e.message?.trim().isNotEmpty ?? false)
+          ? e.message!.trim()
+          : 'Ocurrió un error al actualizar el perfil.';
+      Get.snackbar('Error', backendMessage);
     } catch (e) {
       Get.snackbar('Error', e.toString());
     } finally {
       isSaving.value = false;
     }
-  }
-
-  String? _opt(String? value) {
-    final String trimmed = (value ?? '').trim();
-    return trimmed.isEmpty ? null : trimmed;
-  }
-
-  Map<String, dynamic> _compact(Map<String, dynamic?> source) {
-    final Map<String, dynamic> result = <String, dynamic>{};
-    source.forEach((String key, dynamic value) {
-      if (value == null) {
-        return;
-      }
-      if (value is String) {
-        final String trimmed = value.trim();
-        if (trimmed.isEmpty) {
-          return;
-        }
-        result[key] = trimmed;
-      } else {
-        result[key] = value;
-      }
-    });
-    return result;
   }
 
   @override
