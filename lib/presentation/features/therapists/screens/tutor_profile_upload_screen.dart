@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -8,7 +6,7 @@ import '../../../../data/datasources/local/local_storage.dart';
 import '../../../../data/datasources/marketplace_api_datasource.dart';
 import '../../../shared/widgets/xpressatec_header_appbar.dart';
 import '../../auth/controllers/auth_controller.dart';
-import '../controllers/tutor_profile_controller.dart';
+import '../../marketplace/controllers/tutor_profile_controller.dart';
 
 class TutorProfileUploadScreen extends StatefulWidget {
   const TutorProfileUploadScreen({super.key});
@@ -42,9 +40,6 @@ class _TutorProfileUploadScreenState extends State<TutorProfileUploadScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
     return Scaffold(
       appBar: const XpressatecHeaderAppBar(showBack: true),
       body: Container(
@@ -52,10 +47,10 @@ class _TutorProfileUploadScreenState extends State<TutorProfileUploadScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: <Color>[
-              Colors.white,
-              colorScheme.surfaceVariant.withOpacity(0.2),
-            ],
+              colors: <Color>[
+                Colors.white,
+                Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.2),
+              ],
           ),
         ),
         child: SafeArea(
@@ -66,125 +61,59 @@ class _TutorProfileUploadScreenState extends State<TutorProfileUploadScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    'Subir información',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ) ??
-                        TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Comparte o actualiza tu perfil profesional para que las familias puedan encontrarte en el marketplace.',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ) ??
-                        TextStyle(
-                          fontSize: 16,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                  ),
+                  _buildHeader(context),
                   const SizedBox(height: 24),
-                  _buildSectionTitle(theme, 'Datos profesionales'),
+                  _buildSectionTitle(context, 'Datos profesionales'),
                   const SizedBox(height: 12),
                   _buildRequiredField(
-                    label: 'Nombre completo',
-                    controller: controller.nombreCompletoController,
-                    textCapitalization: TextCapitalization.words,
-                    validator: _requiredValidator('Ingresa tu nombre completo'),
+                    label: 'Correo electrónico',
+                    controller: controller.emailCtrl,
+                    readOnly: true,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: controller.validateEmail,
+                    helperText: 'Este correo identifica tu perfil en el marketplace',
                   ),
                   const SizedBox(height: 16),
                   _buildRequiredField(
                     label: 'Cédula profesional',
-                    controller: controller.cedulaProfesionalController,
+                    controller: controller.cedulaCtrl,
                     textCapitalization: TextCapitalization.characters,
-                    validator: _requiredValidator('Ingresa tu cédula profesional'),
+                    validator: controller.validateCedula,
                   ),
                   const SizedBox(height: 16),
-                  _buildRequiredField(
+                  _buildOptionalField(
                     label: 'Especialidad',
-                    controller: controller.especialidadController,
+                    controller: controller.especialidadCtrl,
                     textCapitalization: TextCapitalization.sentences,
-                    validator: _requiredValidator('Indica tu especialidad'),
                   ),
-                  const SizedBox(height: 20),
-                  _buildModalidadesSelector(theme),
                   const SizedBox(height: 24),
-                  _buildSectionTitle(theme, 'Descripción'),
+                  _buildSectionTitle(context, 'Sector de servicio'),
+                  const SizedBox(height: 12),
+                  _buildSectorSelector(context),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle(context, 'Contacto'),
                   const SizedBox(height: 12),
                   _buildOptionalField(
-                    label: 'Biografía (máx. 500 caracteres)',
-                    controller: controller.bioController,
-                    maxLines: 5,
-                    maxLength: 500,
-                    textCapitalization: TextCapitalization.sentences,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildOptionalField(
-                    label: 'Precio por consulta',
-                    controller: controller.precioConsultaController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    label: 'Teléfono',
+                    controller: controller.telCtrl,
+                    keyboardType: TextInputType.phone,
                     inputFormatters: <TextInputFormatter>[
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s-]')),
                     ],
-                    validator: (String? value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return null;
-                      }
-                      final String normalized = value.replaceAll(',', '.');
-                      if (double.tryParse(normalized) == null) {
-                        return 'Ingresa un número válido';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  _buildSectionTitle(theme, 'Ubicación'),
-                  const SizedBox(height: 12),
-                  _buildOptionalField(
-                    label: 'Estado',
-                    controller: controller.estadoController,
-                    textCapitalization: TextCapitalization.words,
                   ),
                   const SizedBox(height: 16),
                   _buildOptionalField(
-                    label: 'Ciudad',
-                    controller: controller.ciudadController,
-                    textCapitalization: TextCapitalization.words,
+                    label: 'Celular',
+                    controller: controller.celCtrl,
+                    keyboardType: TextInputType.phone,
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s-]')),
+                    ],
                   ),
-                  const SizedBox(height: 24),
-                  _buildSectionTitle(theme, 'Horarios'),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   _buildOptionalField(
-                    label: 'Horarios (JSON, ejemplo: {"lun": ["10:00-13:00"]})',
-                    controller: controller.horariosController,
-                    maxLines: 4,
-                    validator: (String? value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return null;
-                      }
-                      try {
-                        final dynamic parsed = jsonDecode(value.trim());
-                        if (parsed is! Map<String, dynamic>) {
-                          return 'El JSON debe ser un objeto con días y horarios';
-                        }
-                      } catch (_) {
-                        return 'Revisa el formato JSON de los horarios';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  _buildSectionTitle(theme, 'Contacto'),
-                  const SizedBox(height: 12),
-                  _buildOptionalField(
-                    label: 'Correo de contacto',
-                    controller: controller.contactoEmailController,
+                    label: 'Correo alternativo',
+                    controller: controller.correoAltCtrl,
                     keyboardType: TextInputType.emailAddress,
                     validator: (String? value) {
                       if (value == null || value.trim().isEmpty) {
@@ -198,8 +127,14 @@ class _TutorProfileUploadScreenState extends State<TutorProfileUploadScreen> {
                   ),
                   const SizedBox(height: 16),
                   _buildOptionalField(
-                    label: 'Teléfono de contacto',
-                    controller: controller.contactoTelefonoController,
+                    label: 'Red social',
+                    controller: controller.redSocialCtrl,
+                    keyboardType: TextInputType.url,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildOptionalField(
+                    label: 'WhatsApp',
+                    controller: controller.waCtrl,
                     keyboardType: TextInputType.phone,
                     inputFormatters: <TextInputFormatter>[
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s-]')),
@@ -208,7 +143,7 @@ class _TutorProfileUploadScreenState extends State<TutorProfileUploadScreen> {
                   const SizedBox(height: 32),
                   Obx(
                     () => FilledButton(
-                      onPressed: controller.isSaving.value ? null : controller.save,
+                      onPressed: controller.isSaving.value ? null : controller.saveProfile,
                       style: FilledButton.styleFrom(
                         minimumSize: const Size.fromHeight(52),
                         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -232,7 +167,41 @@ class _TutorProfileUploadScreenState extends State<TutorProfileUploadScreen> {
     );
   }
 
-  Widget _buildSectionTitle(ThemeData theme, String title) {
+  Widget _buildHeader(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          'Subir información',
+          style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ) ??
+              TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Comparte o actualiza tu perfil profesional para que las familias puedan encontrarte en el marketplace.',
+          style: theme.textTheme.bodyLarge?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ) ??
+              TextStyle(
+                fontSize: 16,
+                color: colorScheme.onSurfaceVariant,
+              ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionTitle(BuildContext context, String title) {
+    final ThemeData theme = Theme.of(context);
     return Text(
       title,
       style: theme.textTheme.titleMedium?.copyWith(
@@ -250,14 +219,18 @@ class _TutorProfileUploadScreenState extends State<TutorProfileUploadScreen> {
     required TextEditingController controller,
     TextCapitalization textCapitalization = TextCapitalization.none,
     TextInputType keyboardType = TextInputType.text,
+    bool readOnly = false,
+    String? helperText,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
       textCapitalization: textCapitalization,
       keyboardType: keyboardType,
+      readOnly: readOnly,
       decoration: InputDecoration(
         labelText: label,
+        helperText: helperText,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
       ),
       validator: validator,
@@ -290,76 +263,26 @@ class _TutorProfileUploadScreenState extends State<TutorProfileUploadScreen> {
     );
   }
 
-  Widget _buildModalidadesSelector(ThemeData theme) {
-    const List<String> opciones = <String>['Presencial', 'En línea'];
-
-    return FormField<List<String>>(
-      validator: (_) {
-        if (controller.selectedModalidades.isEmpty) {
-          return 'Selecciona al menos una modalidad';
-        }
-        return null;
-      },
-      builder: (FormFieldState<List<String>> field) {
-        return Obx(
-          () {
-            final List<String> seleccionadas = controller.selectedModalidades.toList();
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  'Modalidades*',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ) ??
-                      const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: opciones.map((String opcion) {
-                    final bool isSelected = seleccionadas.contains(opcion);
-                    return FilterChip(
-                      label: Text(opcion),
-                      selected: isSelected,
-                      onSelected: (_) {
-                        controller.toggleModalidad(opcion);
-                        field.didChange(controller.selectedModalidades.toList());
-                      },
-                      selectedColor: Colors.lightBlue.shade100,
-                      checkmarkColor: Colors.lightBlue.shade900,
-                    );
-                  }).toList(),
-                ),
-                if (field.hasError)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      field.errorText!,
-                      style: TextStyle(
-                        color: theme.colorScheme.error,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  String? Function(String?) _requiredValidator(String message) {
-    return (String? value) {
-      if (value == null || value.trim().isEmpty) {
-        return message;
-      }
-      return null;
+  Widget _buildSectorSelector(BuildContext context) {
+    final Map<String, String> sectorLabels = <String, String>{
+      'PR': 'Privado',
+      'PU': 'Público',
+      'AM': 'Ambos',
     };
+
+    return Obx(
+      () => Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: sectorLabels.entries.map((MapEntry<String, String> entry) {
+          final bool isSelected = controller.selectedSector.value == entry.key;
+          return ChoiceChip(
+            label: Text(entry.value),
+            selected: isSelected,
+            onSelected: (_) => controller.changeSector(entry.key),
+          );
+        }).toList(),
+      ),
+    );
   }
 }
