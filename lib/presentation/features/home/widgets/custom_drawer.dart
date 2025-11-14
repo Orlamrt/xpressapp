@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:xpressatec/core/config/routes.dart';
 import 'package:xpressatec/presentation/features/auth/controllers/auth_controller.dart';
+import 'package:xpressatec/presentation/features/therapists/screens/tutor_profile_upload_screen.dart';
 
 import 'drawer_action_card.dart';
 
@@ -116,14 +117,14 @@ class CustomDrawer extends StatelessWidget {
             );
           }),
           Obx(() {
-            if (authController.isTutor || authController.isTerapeuta) {
+            if (authController.isTerapeuta) {
               return Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                 child: DrawerActionCard(
-                  leadingIcon: Icons.person_search,
-                  title: 'Buscar terapeutas',
-                  subtitle: 'Explora terapeutas en comunicación',
-                  onTap: () => Get.toNamed(Routes.communicationTherapists),
+                  leadingIcon: Icons.cloud_upload_outlined,
+                  title: 'Subir información',
+                  subtitle: 'Actualiza tu perfil profesional en el marketplace',
+                  onTap: () => Get.to(() => const TutorProfileUploadScreen()),
                 ),
               );
             }

@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import '../../data/datasources/local/local_asset_storage.dart';
 import '../../data/datasources/local/local_storage.dart';
+import '../../data/datasources/marketplace_api_datasource.dart';
 import '../../data/datasources/remote/api_auth_datasource.dart';
 import '../../data/datasources/remote/firebase_storage_datasource.dart';
 import '../../data/datasources/remote/firestore_datasource.dart'; // 🆕 ADD
@@ -53,6 +54,11 @@ class InitialBinding extends Bindings {
 
     Get.put<TutorLinkApiDatasource>(
       TutorLinkApiDatasourceImpl(),
+      permanent: true,
+    );
+
+    Get.put<MarketplaceApiDatasource>(
+      MarketplaceApiDatasource(),
       permanent: true,
     );
 

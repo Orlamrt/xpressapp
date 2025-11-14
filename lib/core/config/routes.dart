@@ -9,6 +9,7 @@ import 'package:xpressatec/presentation/features/settings/screens/download_picto
 import 'package:xpressatec/presentation/features/settings/screens/settings_screen.dart';
 import 'package:xpressatec/presentation/features/splash/screens/splash_screen.dart';
 import 'package:xpressatec/presentation/features/therapists/screens/communication_therapist_marketplace_screen.dart';
+import 'package:xpressatec/presentation/features/therapists/screens/tutor_profile_upload_screen.dart';
 
 import '../../presentation/features/audio_testing/audio_testing_screen.dart';
 import '../../presentation/features/auth/screens/register_screen.dart';
@@ -37,6 +38,7 @@ class Routes {
   static const String scanQr = '/scan-qr';
   static const String tutorCalendar = '/tutor-calendar';
   static const String communicationTherapists = '/communication-therapists';
+  static const String tutorProfileUpload = '/tutor-profile-upload';
   // static const String audioTesting = '/audio-testing';
 }
 
@@ -84,6 +86,10 @@ class AppRoutes {
       name: Routes.communicationTherapists,
       page: () => const CommunicationTherapistMarketplaceScreen(),
       binding: CommunicationTherapistBinding(),
+    ),
+    GetPage(
+      name: Routes.tutorProfileUpload,
+      page: () => const TutorProfileUploadScreen(),
     ),
     GetPage(
       name: Routes.settings,
