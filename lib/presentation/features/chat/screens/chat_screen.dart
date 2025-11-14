@@ -4,7 +4,14 @@ import 'package:intl/intl.dart';
 import 'package:xpressatec/presentation/features/chat/controllers/chat_controller.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({Key? key}) : super(key: key);
+  const ChatScreen({
+    Key? key,
+    this.conversation,
+    this.showRecipientSelector = true,
+  }) : super(key: key);
+
+  final ChatConversation? conversation;
+  final bool showRecipientSelector;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -13,14 +20,23 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   Worker? _messagesWorker;
+  late final ChatController _controller;
+  ChatConversation? _initialConversation;
 
   @override
   void initState() {
     super.initState();
-    final controller = Get.find<ChatController>();
-    _messagesWorker = ever<List<ChatMessage>>(controller.messages, (_) {
+    _controller = Get.find<ChatController>();
+    _initialConversation = widget.conversation ?? _extractConversationFromArguments();
+    _messagesWorker = ever<List<ChatMessage>>(_controller.messages, (_) {
       _scrollToBottom();
     });
+
+    if (_initialConversation != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _controller.openConversation(_initialConversation!);
+      });
+    }
   }
 
   @override
@@ -45,22 +61,59 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<ChatController>();
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-        title: const Text('Chat en tiempo real'),
+        backgroundColor: colorScheme.surface,
+        elevation: 0,
+        title: Obx(() {
+          final name = _controller.currentRecipientName.value;
+          final role = _controller.currentRecipientRole.value;
+          if (name.isEmpty && role.isEmpty) {
+            return Text(
+              'Chat en tiempo real',
+              style: theme.textTheme.titleLarge,
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                name.isEmpty ? 'Chat' : name,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (role.isNotEmpty)
+                Text(
+                  role,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+            ],
+          );
+        }),
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
       ),
       body: SafeArea(
         child: Column(
           children: [
-            _RecipientSelector(controller: controller),
-            _ConnectionStatusBanner(controller: controller),
+            if (widget.showRecipientSelector)
+              _RecipientSelector(controller: _controller)
+            else
+              _ConversationHeader(controller: _controller),
+            _ConnectionStatusBanner(controller: _controller),
             Expanded(
               child: Obx(() {
-                final visibleMessages = controller.visibleMessages;
+                final visibleMessages = _controller.visibleMessages;
 
-                if (controller.isConnecting.value && visibleMessages.isEmpty) {
+                if (_controller.isConnecting.value && visibleMessages.isEmpty) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
@@ -87,11 +140,95 @@ class _ChatScreenState extends State<ChatScreen> {
                 );
               }),
             ),
-            _MessageInput(controller: controller),
+            _MessageInput(controller: _controller),
           ],
         ),
       ),
     );
+  }
+
+  ChatConversation? _extractConversationFromArguments() {
+    final args = Get.arguments;
+    if (args is ChatConversation) {
+      return args;
+    }
+    if (args is Map<String, dynamic>) {
+      final value = args['conversation'];
+      if (value is ChatConversation) {
+        return value;
+      }
+    }
+    return null;
+  }
+}
+
+class _ConversationHeader extends StatelessWidget {
+  const _ConversationHeader({required this.controller});
+
+  final ChatController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Obx(() {
+      final email = controller.currentRecipientEmail.value;
+      final name = controller.currentRecipientName.value;
+      final role = controller.currentRecipientRole.value;
+
+      if (email.isEmpty && name.isEmpty) {
+        return const SizedBox.shrink();
+      }
+
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.primary.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              name.isEmpty ? email : name,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (role.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  role,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            if (email.isNotEmpty && name.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  email,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    });
   }
 }
 

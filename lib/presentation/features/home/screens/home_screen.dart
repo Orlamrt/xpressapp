@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:xpressatec/presentation/features/chat/screens/chat_screen.dart';
+import 'package:xpressatec/core/config/routes.dart';
+import 'package:xpressatec/presentation/features/chat/screens/chat_list_screen.dart';
 import 'package:xpressatec/presentation/features/home/controllers/navigation_controller.dart';
 import 'package:xpressatec/presentation/features/home/widgets/bottom_nav_bar.dart';
 import 'package:xpressatec/presentation/features/home/widgets/custom_drawer.dart';
@@ -20,39 +21,67 @@ class HomeScreen extends StatelessWidget {
 
     return Obx(() {
       final section = navController.currentSection;
+      final theme = Theme.of(context);
+      final colorScheme = theme.colorScheme;
+
       Widget body;
+      PreferredSizeWidget? appBar;
+      Widget? floatingActionButton;
+      FloatingActionButtonLocation? floatingActionButtonLocation;
 
       switch (section) {
         case NavigationSection.teacch:
           body = const TeacchBoardScreen();
+          appBar = XpressatecHeaderAppBar(
+            showMenu: true,
+            onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+          );
+          floatingActionButton = const TeacchGeneratePhraseFab();
+          floatingActionButtonLocation = FloatingActionButtonLocation.centerFloat;
           break;
         case NavigationSection.chat:
-          body = const ChatScreen();
+          body = const ChatListScreen();
+          appBar = AppBar(
+            backgroundColor: colorScheme.surface,
+            elevation: 0,
+            leading: IconButton(
+              icon: Icon(Icons.menu, color: colorScheme.onSurface),
+              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+            ),
+            title: Text(
+              'Chats',
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          );
+          floatingActionButton = FloatingActionButton(
+            heroTag: 'chatFab',
+            backgroundColor: colorScheme.primary,
+            onPressed: () => Get.toNamed(Routes.newChat),
+            child: Icon(Icons.chat, color: colorScheme.onPrimary),
+          );
+          floatingActionButtonLocation = FloatingActionButtonLocation.endFloat;
           break;
         case NavigationSection.statistics:
           body = const StatisticsScreen();
+          appBar = XpressatecHeaderAppBar(
+            showMenu: true,
+            onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+          );
           break;
       }
 
       return Scaffold(
         key: _scaffoldKey,
-        backgroundColor: Colors.white,
-        appBar: section == NavigationSection.chat
-            ? null
-            : XpressatecHeaderAppBar(
-                showMenu: true,
-                onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
-              ),
+        backgroundColor: colorScheme.background,
+        appBar: appBar,
         drawer: const CustomDrawer(),
         body: body,
         bottomNavigationBar: const BottomNavBar(),
-        floatingActionButton: section == NavigationSection.teacch
-            ? const TeacchGeneratePhraseFab()
-            : null,
-        floatingActionButtonLocation:
-            section == NavigationSection.teacch
-                ? FloatingActionButtonLocation.centerFloat
-                : null,
+        floatingActionButton: floatingActionButton,
+        floatingActionButtonLocation: floatingActionButtonLocation,
       );
     });
   }
