@@ -17,7 +17,7 @@ class TutorProfileController extends GetxController {
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final RxBool isSaving = false.obs;
-  final RxString selectedSector = 'PR'.obs;
+  final RxString selectedSector = 'PR'.obs; // PR / PU / AM
 
   final TextEditingController emailCtrl = TextEditingController();
   final TextEditingController cedulaCtrl = TextEditingController();
@@ -31,29 +31,38 @@ class TutorProfileController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    final String userEmail = _resolveUserEmail();
-    emailCtrl.text = userEmail;
+    _initEmail();
   }
 
-  String _resolveUserEmail() {
-    final String reactiveEmail = authController.userEmail.value.trim();
-    if (reactiveEmail.isNotEmpty) {
-      return reactiveEmail;
+  /// Inicializa el correo del terapeuta usando, en este orden:
+  /// 1) Estado de AuthController
+  /// 2) Usuario actual en AuthController
+  /// 3) Usuario almacenado en LocalStorage
+  Future<void> _initEmail() async {
+    // 1) Intentar desde el estado reactivo
+    final String? emailFromAuth = _getEmailFromAuth();
+    if (emailFromAuth != null && emailFromAuth.isNotEmpty) {
+      emailCtrl.text = emailFromAuth;
+      return;
     }
 
+    // 2) Intentar desde el almacenamiento local
     final String? storedEmail = await _getEmailFromStorage();
-    if (storedEmail != null) {
+    if (storedEmail != null && storedEmail.isNotEmpty) {
       emailCtrl.text = storedEmail;
+      // Normalizar también en el authController para futuros usos
       authController.userEmail.value = storedEmail;
     }
   }
 
   String? _getEmailFromAuth() {
+    // a) Campo reactivo userEmail
     final String emailFromState = authController.userEmail.value.trim();
     if (emailFromState.isNotEmpty) {
       return emailFromState;
     }
 
+    // b) Usuario actual logueado (si se maneja así en tu AuthController)
     final String? emailFromUser = authController.currentUser.value?.email;
     if (emailFromUser != null && emailFromUser.trim().isNotEmpty) {
       final String normalized = emailFromUser.trim();
@@ -75,6 +84,7 @@ class TutorProfileController extends GetxController {
           storedUser['Email'] ??
           storedUser['correo'] ??
           storedUser['Correo'];
+
       if (emailCandidate is String) {
         final String normalized = emailCandidate.trim();
         if (normalized.isNotEmpty) {
@@ -82,9 +92,9 @@ class TutorProfileController extends GetxController {
         }
       }
     } catch (_) {
-      // Ignored: fallback retrieval should not break initialization
+      // Ignorado: si falla, simplemente no ponemos correo
     }
-    return '';
+    return null;
   }
 
   void changeSector(String sector) {
@@ -118,6 +128,9 @@ class TutorProfileController extends GetxController {
 
     isSaving.value = true;
     try {
+      // Si getToken es async, lo esperamos
+      final String? token = await localStorage.getToken();
+
       final Map<String, dynamic> response = await datasource.upsertTutorProfile(
         email: emailCtrl.text.trim(),
         cedula: cedulaCtrl.text.trim(),
@@ -128,7 +141,7 @@ class TutorProfileController extends GetxController {
         correoAlternativo: correoAltCtrl.text.trim(),
         redSocial: redSocialCtrl.text.trim(),
         whatsapp: waCtrl.text.trim(),
-        token: localStorage.getToken(),
+        token: token,
       );
 
       final String message = (response['message'] as String?) ??
